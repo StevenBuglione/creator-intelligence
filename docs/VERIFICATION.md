@@ -1,5 +1,27 @@
 # Release verification
 
+## Visual redesign verification, 16 October 2026
+
+The redesign at b3564d9572b437ae1dadca2d87fa579691c5b51f passed the literal
+`pnpm verify` command on Node 24.19.0 and pnpm 11.25.0: lint, typecheck, 47 tests
+across nine files, production build, and both desktop/mobile browser workflows.
+The browser workflows verify fixture reports, editing, versioning and downloaded
+blueprint JSON. Earlier attempts stopped at a port conflict with an existing demo
+preview; the successful run started its own fresh servers after that conflict was cleared.
+
+The Linux image built with frozen dependencies and passed the isolated six-service
+check: UI/API 200, unauthenticated API 401, HTTP and stdio discovery of 18 MCP tools,
+stored status reads, blocked derived metrics, blueprint export discovery and three
+worker schedules. These checks use isolated fixture consent, not consent on behalf
+of the deployment owner. Local fonts include their upstream license notices.
+
+This visual change does not complete additional backlog features or establish Google
+approval. See [policy review](POLICY_REVIEW.md) for the review scope and remaining
+reviewer decisions. Private screenshots, logs and application materials are excluded
+from source control.
+
+## Standalone release baseline
+
 Checked 2026-10-16 against the standalone public source checkout with Node 24.19.0,
 pnpm 11.25.0 and isolated test/demo databases. This remains a release candidate;
 the 151-row backlog is not a list of completed capabilities.

@@ -642,7 +642,7 @@
     "phase": "P0",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/Overview.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -654,7 +654,7 @@
     "phase": "P0",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -666,7 +666,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -690,7 +690,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -702,7 +702,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -714,7 +714,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -726,7 +726,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -738,7 +738,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -858,7 +858,7 @@
     "phase": "P1",
     "availability": "D",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/youtube/src/index.ts; apps/web/app/_screens/MyChannel.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
@@ -1170,7 +1170,7 @@
     "phase": "P1",
     "availability": "L",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/_screens/Blueprints.tsx",
     "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
     "compliance_gate": null
@@ -1182,7 +1182,7 @@
     "phase": "P1",
     "availability": "L",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/_screens/Blueprints.tsx",
     "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
     "compliance_gate": null
@@ -1194,7 +1194,7 @@
     "phase": "P1",
     "availability": "L",
     "actual_status": "in_progress",
-    "implementation_link": "apps/web/app/page.tsx; apps/mcp/src/server.ts",
+    "implementation_link": "apps/web/app/_screens/Blueprints.tsx; apps/mcp/src/server.ts",
     "test_name": "tests/workflow.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Manual script editing, Claude-authored draft schema and versioning are implemented. Dedicated script-generation/rewriting workflow is not implemented; the optional model currently suggests creative angles.",
     "compliance_gate": null
@@ -1374,7 +1374,7 @@
     "phase": "P1",
     "availability": "L",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/_screens/Blueprints.tsx",
     "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
     "unavailable_reason": "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
     "compliance_gate": null
