@@ -1,75 +1,60 @@
 "use client";
-import { useEffect, useState } from "react";
-import { policyLinks } from "../../../packages/domain/src/policy";
-type PolicyState = {
-  version: string;
-  accepted: boolean;
-  accepted_at: string | null;
-  agent_data_allowed: boolean;
-};
-type Row = {
-  id: string;
-  version: number;
-  body: Record<string, unknown>;
-  meta: {
-    source: string;
-    ownership?: string;
-    retrieved_at: string;
-    stale: boolean;
-    not_available?: string;
-  };
-  updated_at: string;
-};
-type Observation = {
-  data: {
-    rows?: Record<string, unknown>[];
-    impressions?: number;
-    ctr?: number;
-    date?: string;
-  };
-  meta: Row["meta"];
-};
-const API = process.env.NEXT_PUBLIC_API_ORIGIN ?? "http://localhost:4311";
-const empty = {
-  idea_id: undefined as string | undefined,
-  working_title: "",
-  target_format: "youtube_shorts",
-  target_duration_seconds: 60,
-  hook: "",
-  outline: [""],
-  research_sources: [] as { url: string; note: string }[],
-  thumbnail_brief: "",
-  script: "",
-  risk_flags: [] as string[],
-  title_variants: [] as string[],
-};
+import { useEffect, useRef, useState } from "react";
+import { Icon } from "./_components/Icon";
+import { Mark } from "./_components/Mark";
+import { useConfirm } from "./_components/dialog";
+import { ErrorBanner, SuccessBanner } from "./_components/feedback";
+import { StateTag } from "./_components/ui";
+import {
+  API,
+  emptyDraft,
+  pages,
+  type Draft,
+  type Observation,
+  type PageName,
+  type PolicyState,
+  type Row,
+  type Status,
+} from "./_lib/api";
+import type { Workspace } from "./_lib/workspace";
+import { Consent, Login } from "./_screens/Gate";
+import { Overview, type Summary } from "./_screens/Overview";
+import { MyChannel } from "./_screens/MyChannel";
+import { Research } from "./_screens/Research";
+import { Channels } from "./_screens/Channels";
+import { Ideas } from "./_screens/Ideas";
+import { Blueprints } from "./_screens/Blueprints";
+import { Settings } from "./_screens/Settings";
+
 export default function Home() {
   const [csrf, setCsrf] = useState(""),
-    [password, setPassword] = useState(""),
-    [page, setPage] = useState("Overview"),
+    [page, setPage] = useState<PageName>("Overview"),
+    [loadedPage, setLoadedPage] = useState<PageName | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [status, setStatus] = useState<Record<string, unknown>>({}),
+    [status, setStatus] = useState<Status>({}),
     [items, setItems] = useState<Row[]>([]),
+    [summary, setSummary] = useState<Summary | null>(null),
     [metrics, setMetrics] = useState<Observation[]>([]),
-    [identifier, setIdentifier] = useState(""),
-    [title, setTitle] = useState(""),
-    [angle, setAngle] = useState(""),
-    [source, setSource] = useState(""),
-    [draft, setDraft] = useState(empty),
-    [editing, setEditing] = useState<Row | null>(null),
     [kind, setKind] = useState("overview"),
     [video, setVideo] = useState(""),
     [message, setMessage] = useState(""),
-    [agentDraft, setAgentDraft] = useState(
-      '{"operation":"idea_save","input":{"body":{"title":"","angle":"","references":[]}}}',
-    ),
-    [agentGrant, setAgentGrant] = useState("");
+    [source, setSource] = useState(""),
+    [ideaTitle, setIdeaTitle] = useState(""),
+    [draft, setDraft] = useState<Draft>(emptyDraft),
+    [editing, setEditing] = useState<Row | null>(null),
+    [checked, setChecked] = useState(false);
   const [policy, setPolicy] = useState<PolicyState | null>(null);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [allowAgent, setAllowAgent] = useState(false);
-  async function request(path: string, body?: unknown, token = csrf) {
+  const [confirmElement, confirm] = useConfirm();
+  const sequence = useRef(0);
+  const heading = useRef<HTMLDivElement>(null);
+  const navigated = useRef(false);
+
+  async function request<T = unknown>(
+    path: string,
+    body?: unknown,
+    token = csrf,
+  ): Promise<T> {
     const r = await fetch(API + "/api/v1/" + path, {
       method: body === undefined ? "GET" : "POST",
       credentials: "include",
@@ -95,20 +80,17 @@ export default function Home() {
           setPolicy(null);
           setCsrf("");
         }
-        setPrivacyAccepted(false);
-        setTermsAccepted(false);
-        setAllowAgent(false);
       }
       throw new Error(data.error?.code ?? "Request failed");
     }
-    return data.data;
+    return data.data as T;
   }
-  const call = (op: string, input: unknown = {}) =>
-    request("operations/" + op, input);
-  async function run(work: () => Promise<void>) {
+  const call = <T = unknown,>(op: string, input: unknown = {}) =>
+    request<T>("operations/" + op, input);
+  async function run(work: () => Promise<void>, keepMessage = false) {
     setBusy(true);
     setError("");
-    setMessage("");
+    if (!keepMessage) setMessage("");
     try {
       await work();
     } catch (e) {
@@ -119,1226 +101,347 @@ export default function Home() {
   }
   async function refresh(token = csrf) {
     if (!token || !policy?.accepted) return;
-    const invoke = (op: string, input: unknown = {}) =>
-      request("operations/" + op, input, token);
-    setStatus(await invoke("status"));
-    const op =
-      page === "Research"
-        ? "videos"
-        : page === "Channels"
-          ? "channels"
-          : page === "Ideas"
-            ? "ideas"
-            : page === "Blueprints"
-              ? "blueprints"
-              : null;
-    setItems(op ? await invoke(op) : []);
-    if (page === "My channel" || page === "Overview")
-      setMetrics(
-        await invoke("analytics", {
+    const seq = ++sequence.current,
+      current = page;
+    const invoke = <T,>(op: string, input: unknown = {}) =>
+      request<T>("operations/" + op, input, token);
+    const nextStatus = await invoke<Status>("status");
+    if (seq !== sequence.current) return;
+    setStatus(nextStatus);
+    if (current === "Overview") {
+      const [channels, videos, ideas, blueprints] = await Promise.all(
+        ["channels", "videos", "ideas", "blueprints"].map((op) =>
+          invoke<Row[]>(op),
+        ),
+      );
+      const report = await invoke<Observation[]>("analytics", {
+        kind: "overview",
+      });
+      if (seq !== sequence.current) return;
+      setSummary({
+        channels: channels!,
+        videos: videos!,
+        ideas: ideas!,
+        blueprints: blueprints!,
+      });
+      setItems([]);
+      setMetrics(report);
+    } else {
+      const op =
+        current === "Research"
+          ? "videos"
+          : current === "Channels"
+            ? "channels"
+            : current === "Ideas"
+              ? "ideas"
+              : current === "Blueprints"
+                ? "blueprints"
+                : null;
+      const rows = op ? await invoke<Row[]>(op) : [];
+      if (seq !== sequence.current) return;
+      setItems(rows);
+      if (current === "My channel") {
+        setMetrics([]);
+        const report = await invoke<Observation[]>("analytics", {
           kind,
           ...(video ? { video_id: video } : {}),
-        }),
-      );
+        });
+        if (seq !== sequence.current) return;
+        setMetrics(report);
+      }
+    }
+    setLoadedPage(current);
   }
   useEffect(() => {
-    request("session")
+    request<{ csrf: string; policy: PolicyState }>("session")
       .then((d) => {
         setCsrf(d.csrf);
         setPolicy(d.policy);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setChecked(true));
     if ("serviceWorker" in navigator)
       void navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
   useEffect(() => {
-    if (csrf && policy?.accepted) void run(() => refresh());
+    // Background reloads keep the confirmation of the action that caused them.
+    if (csrf && policy?.accepted) void run(() => refresh(), true);
   }, [csrf, page, kind, policy?.accepted]);
-  async function saveBlueprint() {
-    const row = await call("blueprint_save", {
-      body: draft,
-      ...(editing ? { id: editing.id, version: editing.version } : {}),
-    });
-    setEditing(row);
-    setMessage("Saved revision " + row.version);
-    await refresh();
+  useEffect(() => {
+    // Move focus to the new page title after navigation, not on first load.
+    if (!navigated.current) return;
+    heading.current?.querySelector("h2")?.focus({ preventScroll: true });
+    document
+      .querySelector('.nav [aria-current="page"]')
+      ?.scrollIntoView({ block: "nearest", inline: "center" });
+  }, [page]);
+
+  function go(next: PageName) {
+    navigated.current = true;
+    setPage(next);
+    setEditing(null);
+    setDraft(emptyDraft);
+    setError("");
+    setMessage("");
+    window.scrollTo({ top: 0 });
   }
-  async function exportBlueprint(row: Row) {
-    await run(async () => {
-      const result = await call("blueprint_export", {
-        id: row.id,
-        revision: row.version,
-      });
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(result, null, 2)], {
-          type: "application/json",
-        }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `creator-blueprint-${row.id}-v${row.version}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setMessage(`Exported revision ${row.version} as local JSON.`);
-    });
+  function moveTo(next: PageName) {
+    navigated.current = true;
+    setPage(next);
+    window.scrollTo({ top: 0 });
   }
-  const google = status.google as
-    | { connected?: boolean; configured?: boolean; channel_id?: string }
-    | undefined;
+  const signOut = () =>
+    void run(async () => {
+      await request("logout", {});
+      setCsrf("");
+    });
+
+  if (!checked) return <div className="boot" aria-busy="true" />;
   if (!csrf)
     return (
-      <main className="login">
-        <p className="eyebrow">LOCAL WORKSPACE</p>
-        <h1>Creator Intelligence</h1>
-        <p>
-          Evidence for the next video. Original ideas. A clear plan for your
-          next video.
-        </p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run(async () => {
-              const d = await request("login", { password });
-              setPassword("");
-              setCsrf(d.csrf);
-              setPolicy(d.policy);
-            });
-          }}
-        >
-          <label>
-            Owner password
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          <button disabled={busy}>Open workspace</button>
-        </form>
-        <p className="muted">
-          Use the private local credential helper to copy your owner password.
-          Credentials stay on this computer.
-        </p>
-        {error && <p role="alert">{error}</p>}
-        <a href="/privacy">Privacy & data controls</a>
-      </main>
+      <Login
+        busy={busy}
+        error={error}
+        onSubmit={(password) =>
+          run(async () => {
+            const d = await request<{ csrf: string; policy: PolicyState }>(
+              "login",
+              { password },
+            );
+            setCsrf(d.csrf);
+            setPolicy(d.policy);
+          })
+        }
+      />
     );
   if (!policy?.accepted)
     return (
-      <main className="login">
-        <p className="eyebrow">YOUR PRIVACY AND CHOICES</p>
-        <h1>Before you use Creator Intelligence</h1>
-        <p>
-          This application uses YouTube API Services for public research and
-          reports from your authorized channel. Records and drafts are stored
-          locally. Connecting Google requires your separate consent.
-        </p>
-        <p>
-          Policy version {policy?.version}. Read the{" "}
-          <a href="/privacy" target="_blank" rel="noreferrer">
-            privacy policy
-          </a>
-          ,{" "}
-          <a href="/terms" target="_blank" rel="noreferrer">
-            terms of use
-          </a>
-          ,{" "}
-          <a href={policyLinks.youtube} target="_blank" rel="noreferrer">
-            YouTube Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href={policyLinks.google} target="_blank" rel="noreferrer">
-            Google Privacy Policy
-          </a>
-          .
-        </p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run(async () => {
-              const current = await request("policy/accept", {
-                version: policy?.version,
-                privacy_accepted: privacyAccepted,
-                terms_accepted: termsAccepted,
-                agent_data_allowed: allowAgent,
-              });
-              setPolicy(current);
+      <Consent
+        policy={policy}
+        busy={busy}
+        error={error}
+        onSignOut={signOut}
+        onAccept={(choices) =>
+          run(async () => {
+            const current = await request<PolicyState>("policy/accept", {
+              version: policy?.version,
+              privacy_accepted: choices.privacy,
+              terms_accepted: choices.terms,
+              agent_data_allowed: choices.agent,
             });
-          }}
-        >
-          <label>
-            <input
-              type="checkbox"
-              required
-              checked={privacyAccepted}
-              onChange={(e) => setPrivacyAccepted(e.target.checked)}
-            />{" "}
-            I agree to the privacy policy.
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              required
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-            />{" "}
-            I agree to the terms of use, including the YouTube Terms of Service.
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={allowAgent}
-              onChange={(e) => setAllowAgent(e.target.checked)}
-            />{" "}
-            Optional: allow my connected MCP client to read requested workspace
-            data, including owner reports, and send it to its AI provider under
-            that account's settings.
-          </label>
-          <p className="muted">
-            Leave MCP sharing off to use the local interface only. Check your AI
-            provider's privacy settings before enabling it. You can turn sharing
-            off in Settings. Google credentials are never included in MCP
-            results.
-          </p>
-          <button disabled={busy || !privacyAccepted || !termsAccepted}>
-            Accept policies & open workspace
-          </button>
-        </form>
-        {error && <p role="alert">{error}</p>}
-        <button
-          onClick={() =>
-            void run(async () => {
-              await request("logout", {});
-              setCsrf("");
-            })
-          }
-        >
-          Sign out without accepting
-        </button>
-        <p>
-          <a href={policyLinks.privacy}>
-            Developer contact and data deletion information
-          </a>
-        </p>
-      </main>
+            setPolicy(current);
+          })
+        }
+      />
     );
+
+  const ws: Workspace = {
+    busy,
+    status,
+    policy,
+    setPolicy,
+    run,
+    call,
+    request,
+    refresh: () => refresh(),
+    setPage: moveTo,
+    go,
+    setMessage,
+    signOut,
+    clearSession: () => setCsrf(""),
+    confirm,
+  };
+  const ready = loadedPage === page;
+  const google = status.google;
+  const groups = ["Evidence", "Create", "Workspace"] as const;
   return (
-    <div className="shell">
-      <aside>
-        <p className="eyebrow">LOCAL / PRIVATE</p>
-        <h1>
-          Creator
-          <br />
-          Intelligence<span>.</span>
-        </h1>
-        <nav aria-label="Workspace">
-          {[
-            "Overview",
-            "My channel",
-            "Research",
-            "Channels",
-            "Ideas",
-            "Blueprints",
-            "Settings",
-          ].map((p) => (
-            <button
-              aria-current={page === p ? "page" : undefined}
-              key={p}
-              onClick={() => {
-                setPage(p);
-                setEditing(null);
-                setDraft(empty);
-              }}
-            >
-              {p}
-            </button>
+    <div className="app">
+      <a className="skip" href="#content">
+        Skip to content
+      </a>
+      <aside className="rail">
+        <div className="brand">
+          <Mark />
+          <h1>
+            Creator <span>Intelligence</span>
+          </h1>
+        </div>
+        <nav aria-label="Workspace" className="nav">
+          {groups.map((group) => (
+            <div className="nav-group" key={group}>
+              <p className="nav-heading" aria-hidden="true">
+                {group}
+              </p>
+              {pages
+                .filter((p) => p.group === group)
+                .map((p) => (
+                  <button
+                    aria-current={page === p.name ? "page" : undefined}
+                    key={p.name}
+                    onClick={() => go(p.name)}
+                  >
+                    <Icon name={p.icon} />
+                    <span>{p.name}</span>
+                  </button>
+                ))}
+            </div>
           ))}
         </nav>
-        <p className="muted">Research → idea → blueprint → local export</p>
-        <p>
-          <a href="/privacy">Privacy & data controls</a> ·{" "}
-          <a href="/terms">Terms of use</a>
-        </p>
+        <div className="rail-foot">
+          <p className="nav-heading">Workflow</p>
+          <ol className="workflow">
+            {[
+              ["Research", ["Research", "Channels", "My channel", "Overview"]],
+              ["Idea", ["Ideas"]],
+              ["Blueprint", ["Blueprints"]],
+              ["Local JSON export", ["Blueprints"]],
+            ].map(([label, on]) => (
+              <li
+                key={label as string}
+                className={
+                  (on as string[]).includes(page) ? "is-on" : undefined
+                }
+              >
+                {label as string}
+              </li>
+            ))}
+          </ol>
+          <p className="rail-links">
+            <a href="/privacy">Privacy & data controls</a>
+            <a href="/terms">Terms of use</a>
+          </p>
+        </div>
       </aside>
-      <main>
-        <header>
-          <div>
-            <p className="eyebrow">
-              {status.mode === "demo"
-                ? "SYNTHETIC DEMONSTRATION"
-                : "CREATOR WORKSPACE"}
-            </p>
-            <h2>{page}</h2>
-          </div>
-          <button disabled={busy} onClick={() => void run(() => refresh())}>
-            Refresh view
-          </button>
-        </header>
-        <div className="status">
-          <span>
+      <div className="main-col">
+        <div className="contextbar">
+          {status.mode === "demo" ? (
+            <span
+              className="mode-badge"
+              title="Deterministic fixtures. Not real channel data."
+            >
+              SYNTHETIC DEMONSTRATION
+            </span>
+          ) : (
+            <span className="mode-live">Creator workspace</span>
+          )}
+          <StateTag tone={google?.connected ? "on" : "off"}>
             {google?.connected
               ? "Owner channel connected"
               : "Owner channel disconnected"}
+          </StateTag>
+          <StateTag tone={policy.agent_data_allowed ? "warn" : "neutral"}>
+            {policy.agent_data_allowed ? "MCP sharing on" : "MCP sharing off"}
+          </StateTag>
+          <span className="context-scope">
+            Standalone research and planning
           </span>
-          <span>Standalone research and planning</span>
         </div>
-        {["Overview", "My channel", "Research", "Channels"].includes(page) &&
-          status.mode !== "demo" && (
-            <div className="youtube-attribution">
-              <a
-                href="https://www.youtube.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <img
-                  src="/youtube-developed-light.png"
-                  width="280"
-                  height="100"
-                  alt="Developed with YouTube"
-                />
-              </a>
-              <span>
-                Official YouTube API records. Creative drafts are independent
-                output.
-              </span>
-            </div>
-          )}
-        {error && (
-          <p className="alert" role="alert">
-            {error.replaceAll("_", " ")}. No values were invented.
-          </p>
-        )}
-        {message && (
-          <p className="notice" role="status">
-            {message}
-          </p>
-        )}
-        {busy && <p role="status">Working…</p>}
-        {(page === "Overview" || page === "My channel") && (
-          <>
-            <section>
-              <h3>Your channel, with evidence</h3>
-              <p>
-                Views and engaged views are separate measures. Missing values
-                mean not available. Stored reports may lag YouTube.
-              </p>
-              <div className="actions">
-                <label>
-                  Report
-                  <select
-                    aria-label="Report"
-                    value={kind}
-                    onChange={(e) => setKind(e.target.value)}
-                  >
-                    {["overview", "traffic", "retention", "reach"].map((k) => (
-                      <option key={k}>{k}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Video ID (required for retention/reach)
-                  <input
-                    value={video}
-                    onChange={(e) => setVideo(e.target.value)}
-                    placeholder="11-character video ID"
-                  />
-                </label>
-                <button
-                  disabled={busy}
-                  onClick={() => void run(() => refresh())}
-                >
-                  Load stored report
-                </button>
-                <button
-                  disabled={busy || !google?.connected}
-                  onClick={() =>
-                    void run(async () => {
-                      const to = new Date(Date.now() - 2 * 86400_000)
-                          .toISOString()
-                          .slice(0, 10),
-                        from = new Date(Date.now() - 28 * 86400_000)
-                          .toISOString()
-                          .slice(0, 10);
-                      await call(
-                        kind === "reach" ? "reporting_sync" : "analytics_sync",
-                        {
-                          kind,
-                          from,
-                          to,
-                          ...(video ? { video_id: video } : {}),
-                        },
-                      );
-                      await refresh();
-                    })
-                  }
-                >
-                  Sync from YouTube
-                </button>
-              </div>
-            </section>
-            <section>
-              {!metrics.length ? (
-                <div className="empty">
-                  <h3>Not available yet</h3>
-                  <p>
-                    {google?.connected
-                      ? "Sync the selected report. Reach reports can remain pending while Google prepares them."
-                      : "Connect your owner channel in Settings to load private analytics."}
-                  </p>
-                </div>
-              ) : (
-                metrics.slice(0, kind === "reach" ? 100 : 1).map((o, i) => (
-                  <div key={i}>
-                    <Provenance meta={o.meta} />
-                    {o.data.rows ? (
-                      <>
-                        <MetricChart rows={o.data.rows} />
-                        <DataTable rows={o.data.rows} />
-                      </>
-                    ) : (
-                      <DataTable
-                        rows={[
-                          {
-                            date: o.data.date,
-                            thumbnail_impressions: o.data.impressions,
-                            thumbnail_ctr:
-                              o.data.ctr == null
-                                ? "Not available"
-                                : (o.data.ctr * 100).toFixed(2) + "%",
-                          },
-                        ]}
-                      />
-                    )}
-                  </div>
-                ))
-              )}
-            </section>
-            <section>
-              <h3>Ready for the next video</h3>
-              <p>
-                Add a public channel, select a source, and write an original
-                angle. Keep the evidence attached as you develop the blueprint.
-              </p>
-              <button onClick={() => setPage("Channels")}>
-                Add research sources
-              </button>
-            </section>
-          </>
-        )}
-        {page === "Channels" && (
-          <>
-            <section>
-              <form
-                className="actions"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void run(async () => {
-                    await call("channel_add", { identifier });
-                    setIdentifier("");
-                    await refresh();
-                  });
-                }}
-              >
-                <label>
-                  Public channel ID or @handle
-                  <input
-                    required
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="@channel-handle"
-                  />
-                </label>
-                <button disabled={busy}>Track channel</button>
-              </form>
-              <p className="muted">
-                Tracking starts at the first observation. Earlier counts are
-                unavailable. Refresh or delete public records within 30 days.
-              </p>
-            </section>
-            {items.map((row) => (
-              <section key={row.id}>
-                <h3>{String(row.body.title)}</h3>
-                <p>{row.id}</p>
-                <Provenance meta={row.meta} />
-                <p>Tracking since {String(row.body.tracking_since)}</p>
-                <button
-                  disabled={busy}
-                  onClick={() =>
-                    void run(async () => {
-                      await call("channel_remove", { id: row.id });
-                      await refresh();
-                    })
-                  }
-                >
-                  Remove channel and cached records
-                </button>
-              </section>
-            ))}
-          </>
-        )}
-        {page === "Research" && (
-          <>
-            <section>
-              <form
-                className="actions"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void run(async () => {
-                    await call("video_lookup", { id: identifier });
-                    setIdentifier("");
-                    await refresh();
-                  });
-                }}
-              >
-                <label>
-                  Public video ID
-                  <input
-                    required
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    maxLength={11}
-                  />
-                </label>
-                <button disabled={busy}>Look up video</button>
-              </form>
-            </section>
-            <p>
-              Raw public records from tracked channels. Format remains unknown
-              unless the source establishes it. No competitor scores or
-              rankings.
+        <main id="content" className="content" aria-busy={busy}>
+          <div
+            className={"progress" + (busy ? " is-on" : "")}
+            aria-hidden="true"
+          />
+          {busy && (
+            <p role="status" className="sr-only">
+              Working…
             </p>
-            <div className="cards">
-              {items.map((row) => (
-                <section key={row.id}>
-                  <h3>{String(row.body.title)}</h3>
-                  <a
-                    href={"https://www.youtube.com/watch?v=" + row.id}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    View source video ↗
-                  </a>
-                  <Provenance meta={row.meta} />
-                  <DataTable
-                    rows={[row.body.statistics as Record<string, unknown>]}
-                  />
-                  <p>Format: {String(row.body.format)}</p>
-                  <button
-                    onClick={() => {
-                      setSource("https://www.youtube.com/watch?v=" + row.id);
-                      setTitle("");
-                      setPage("Ideas");
-                    }}
-                  >
-                    Use as inspiration
-                  </button>
-                </section>
-              ))}
-            </div>
-            {!items.length && (
-              <p className="empty">
-                Add a channel to collect its visible uploads through the
-                official API.
-              </p>
+          )}
+          <div className="feedback">
+            {error && (
+              <ErrorBanner
+                code={error}
+                note="No values were invented."
+                onDismiss={() => setError("")}
+              />
             )}
-          </>
-        )}
-        {page === "Ideas" && (
-          <>
-            <section>
-              <h3>Write a distinct angle</h3>
-              <button
-                disabled={busy || !title}
-                onClick={() =>
-                  void run(async () => {
-                    const result = await call("suggest_angles", {
-                      topic: title,
-                      source_urls: source ? [source] : [],
-                    });
-                    setAngle(
-                      "AI-generated creative suggestions; verify claims.\n\n" +
-                        result.angles
-                          .map(
-                            (a: {
-                              title: string;
-                              angle: string;
-                              hook: string;
-                              unverified_claims: string[];
-                            }) =>
-                              a.title +
-                              "\n" +
-                              a.angle +
-                              "\n" +
-                              a.hook +
-                              "\nUnverified claims: " +
-                              (a.unverified_claims.join("; ") ||
-                                "None supplied; still review independently"),
-                          )
-                          .join("\n\n"),
-                    );
-                    setMessage(
-                      "Local model suggestions — review claims and select an original angle.",
-                    );
-                  })
-                }
-              >
-                Suggest three angles with local model
-              </button>
-              <p className="muted">
-                Optional local model. You can also write here or use Claude with
-                the MCP evidence tools.
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void run(async () => {
-                    await call("idea_save", {
-                      title,
-                      angle,
-                      references: source
-                        ? [
-                            {
-                              url: source,
-                              note: "Inspiration, not a claim of ownership.",
-                            },
-                          ]
-                        : [],
-                    });
-                    setTitle("");
-                    setAngle("");
-                    await refresh();
-                  });
+            {message && (
+              <SuccessBanner
+                message={message}
+                onDismiss={() => setMessage("")}
+              />
+            )}
+          </div>
+          <div key={page} className="page" ref={heading}>
+            {page === "Overview" && (
+              <Overview
+                ws={ws}
+                ready={ready}
+                summary={summary}
+                metrics={metrics}
+              />
+            )}
+            {page === "My channel" && (
+              <MyChannel
+                ws={ws}
+                ready={ready}
+                metrics={metrics}
+                kind={kind}
+                setKind={setKind}
+                video={video}
+                setVideo={setVideo}
+              />
+            )}
+            {page === "Research" && (
+              <Research
+                ws={ws}
+                ready={ready}
+                items={items}
+                onInspire={(url) => {
+                  setSource(url);
+                  setIdeaTitle("");
+                  setMessage("");
+                  moveTo("Ideas");
                 }}
-              >
-                <label>
-                  Working title
-                  <input
-                    required
-                    maxLength={200}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Original angle
-                  <textarea
-                    value={angle}
-                    onChange={(e) => setAngle(e.target.value)}
-                  />
-                </label>
-                <label>
-                  Source URL (optional)
-                  <input
-                    type="url"
-                    value={source}
-                    onChange={(e) => setSource(e.target.value)}
-                  />
-                </label>
-                <button disabled={busy}>Save idea</button>
-              </form>
-            </section>
-            {items.map((row) => (
-              <section key={row.id}>
-                <h3>{String(row.body.title)}</h3>
-                <p>{String(row.body.angle)}</p>
-                <button
-                  onClick={() => {
-                    setEditing(null);
-                    setDraft({
-                      ...empty,
-                      idea_id: row.id,
-                      working_title: String(row.body.title),
-                      hook: String(row.body.angle),
-                      research_sources: (row.body.references ?? []) as {
-                        url: string;
-                        note: string;
-                      }[],
-                    });
-                    setPage("Blueprints");
-                  }}
-                >
-                  Develop blueprint
-                </button>
-              </section>
-            ))}
-          </>
-        )}
-        {page === "Blueprints" && (
-          <>
-            <section>
-              <h3>
-                {editing
-                  ? "Edit revision " + editing.version
-                  : "New production blueprint"}
-              </h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void run(saveBlueprint);
+              />
+            )}
+            {page === "Channels" && (
+              <Channels ws={ws} ready={ready} items={items} />
+            )}
+            {page === "Ideas" && (
+              <Ideas
+                ws={ws}
+                ready={ready}
+                items={items}
+                title={ideaTitle}
+                setTitle={setIdeaTitle}
+                source={source}
+                setSource={setSource}
+                onDevelop={(next) => {
+                  setEditing(null);
+                  setDraft(next);
+                  setMessage("");
+                  moveTo("Blueprints");
                 }}
-              >
-                <label>
-                  Working title
-                  <input
-                    required
-                    maxLength={200}
-                    value={draft.working_title}
-                    onChange={(e) =>
-                      setDraft({ ...draft, working_title: e.target.value })
-                    }
-                  />
-                </label>
-                <div className="actions">
-                  <label>
-                    Format
-                    <select
-                      value={draft.target_format}
-                      onChange={(e) =>
-                        setDraft({ ...draft, target_format: e.target.value })
-                      }
-                    >
-                      <option value="youtube_shorts">Shorts</option>
-                      <option value="youtube_long_form">Long form</option>
-                    </select>
-                  </label>
-                  <label>
-                    Duration (seconds)
-                    <input
-                      type="number"
-                      min={10}
-                      max={3600}
-                      value={draft.target_duration_seconds}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          target_duration_seconds: Number(e.target.value),
-                        })
-                      }
-                    />
-                  </label>
-                </div>
-                <label>
-                  Hook
-                  <textarea
-                    value={draft.hook}
-                    onChange={(e) =>
-                      setDraft({ ...draft, hook: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Outline (one beat per line)
-                  <textarea
-                    required
-                    value={draft.outline.join("\n")}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        outline: e.target.value.split("\n"),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Alternative titles (one per line)
-                  <textarea
-                    value={draft.title_variants?.join("\n") ?? ""}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        title_variants: e.target.value
-                          .split("\n")
-                          .filter(Boolean),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Script
-                  <textarea
-                    rows={8}
-                    value={draft.script}
-                    onChange={(e) =>
-                      setDraft({ ...draft, script: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Thumbnail brief
-                  <textarea
-                    value={draft.thumbnail_brief}
-                    onChange={(e) =>
-                      setDraft({ ...draft, thumbnail_brief: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Research source URLs (one per line)
-                  <textarea
-                    value={draft.research_sources.map((s) => s.url).join("\n")}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        research_sources: e.target.value
-                          .split("\n")
-                          .filter(Boolean)
-                          .map(
-                            (url) =>
-                              draft.research_sources.find(
-                                (s) => s.url === url,
-                              ) ?? {
-                                url,
-                                note: "User-selected inspiration; independently verify claims.",
-                              },
-                          ),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Risks / unverified claims (one per line)
-                  <textarea
-                    value={draft.risk_flags.join("\n")}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        risk_flags: e.target.value.split("\n").filter(Boolean),
-                      })
-                    }
-                  />
-                </label>
-                <button disabled={busy}>Save blueprint revision</button>
-              </form>
-            </section>
-            {items.map((row) => (
-              <section key={row.id}>
-                <h3>
-                  {String(row.body.working_title)} <small>v{row.version}</small>
-                </h3>
-                <p>{String(row.body.hook)}</p>
-                <p>
-                  Format: {String(row.body.target_format)} ·{" "}
-                  {String(row.body.target_duration_seconds)} seconds
-                </p>
-                <div className="actions">
-                  <button
-                    onClick={() => {
-                      setEditing(row);
-                      setDraft(row.body as typeof draft);
-                      setSource("");
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    disabled={busy}
-                    onClick={() => void exportBlueprint(row)}
-                  >
-                    Export blueprint JSON
-                  </button>
-                </div>
-              </section>
-            ))}
-            <section>
-              <h3>Published video link</h3>
-              {editing && (
-                <div className="actions">
-                  <label>
-                    Published video ID
-                    <input
-                      value={video}
-                      onChange={(e) => setVideo(e.target.value)}
-                      maxLength={11}
-                    />
-                  </label>
-                  <button
-                    disabled={busy || !google?.connected}
-                    onClick={() =>
-                      void run(async () => {
-                        await call("link_video", {
-                          id: editing.id,
-                          video_id: video,
-                        });
-                        setPage("My channel");
-                        setKind("overview");
-                        setMessage(
-                          "Published video linked after verifying it belongs to your channel.",
-                        );
-                      })
-                    }
-                  >
-                    Link video & view performance
-                  </button>
-                </div>
-              )}
-              <p>
-                Link a video you published separately to inspect its
-                owner-authorized performance.
-              </p>
-            </section>
-          </>
-        )}
-        {page === "Settings" && (
-          <>
-            <section>
-              <h3>Privacy and MCP sharing</h3>
-              <p>
-                Policy {policy.version} accepted{" "}
-                {policy.accepted_at
-                  ? new Date(policy.accepted_at).toLocaleString()
-                  : ""}
-                . <a href="/privacy">Review privacy and data controls</a>.
-              </p>
-              <p>
-                MCP data sharing:{" "}
-                {policy.agent_data_allowed ? "enabled" : "disabled"}. Requested
-                records may reach the connected AI provider. Verify its account
-                settings before sharing.
-              </p>
-              <button
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    !policy.agent_data_allowed &&
-                    !window.confirm(
-                      "Allow the connected MCP client to read requested workspace records, including owner analytics, under its provider's privacy settings?",
-                    )
-                  )
-                    return;
-                  void run(async () =>
-                    setPolicy(
-                      await request("policy/agent-data", {
-                        allowed: !policy.agent_data_allowed,
-                      }),
-                    ),
-                  );
+              />
+            )}
+            {page === "Blueprints" && (
+              <Blueprints
+                ws={ws}
+                ready={ready}
+                items={items}
+                draft={draft}
+                setDraft={setDraft}
+                editing={editing}
+                setEditing={setEditing}
+                video={video}
+                setVideo={setVideo}
+                onLinked={() => {
+                  setKind("overview");
+                  moveTo("My channel");
                 }}
-              >
-                {policy.agent_data_allowed
-                  ? "Disable MCP data sharing"
-                  : "Enable MCP data sharing"}
-              </button>
-            </section>
-            <section>
-              <h3>Authorize one Claude draft</h3>
-              <p>
-                Review the exact idea or blueprint JSON from Claude. This
-                authorizes one save for 15 minutes. You can review and export
-                saved blueprints as local JSON files.
-              </p>
-              <label>
-                Draft request JSON
-                <textarea
-                  rows={8}
-                  value={agentDraft}
-                  onChange={(e) => {
-                    setAgentDraft(e.target.value);
-                    setAgentGrant("");
-                  }}
-                />
-              </label>
-              <button
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Authorize this exact draft to be saved once by Claude?",
-                    )
-                  )
-                    void run(async () => {
-                      const request = JSON.parse(agentDraft);
-                      const grant = await call("agent_authorize", request);
-                      setAgentGrant(
-                        JSON.stringify(
-                          {
-                            ...grant.input,
-                            authorization: grant.authorization,
-                          },
-                          null,
-                          2,
-                        ),
-                      );
-                    });
-                }}
-              >
-                Authorize reviewed draft
-              </button>
-              {agentGrant && (
-                <>
-                  <label>
-                    One-use authorized input for Claude
-                    <textarea readOnly rows={8} value={agentGrant} />
-                  </label>
-                  <button
-                    onClick={() =>
-                      void navigator.clipboard.writeText(agentGrant)
-                    }
-                  >
-                    Copy authorized input
-                  </button>
-                </>
-              )}
-            </section>
-            <section>
-              <h3>Google access</h3>
-              <p>
-                Read-only access for Creator Intelligence. Your existing upload
-                and publish connection stays intact.
-              </p>
-              <button
-                disabled={busy || !google?.configured}
-                onClick={() =>
-                  void run(async () => {
-                    const d = await request("auth/google/start", {});
-                    window.location.assign(d.url);
-                  })
-                }
-              >
-                Connect owner channel
-              </button>
-              <button
-                disabled={busy || !google?.connected}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Disconnect this app and delete its stored owner analytics?",
-                    )
-                  )
-                    void run(async () => {
-                      await call("disconnect");
-                      await refresh();
-                    });
-                }}
-              >
-                Remove local connection & owner metrics
-              </button>
-              {!google?.configured && (
-                <p>Dedicated Google OAuth client configuration is pending.</p>
-              )}
-              <details>
-                <summary>Revoke Google access for this project</summary>
-                <p>
-                  Revocation can disconnect other clients using this Google
-                  project, including a publisher. Local removal above only
-                  removes this app's stored connection.
-                </p>
-                <button
-                  disabled={busy || !google?.connected}
-                  onClick={() => {
-                    const confirmation = window.prompt(
-                      "This revokes this Google project's grant and can affect any other clients in the same project. To proceed, type REVOKE GOOGLE PROJECT ACCESS",
-                    );
-                    if (confirmation === "REVOKE GOOGLE PROJECT ACCESS")
-                      void run(async () => {
-                        await call("revoke_google_project", { confirmation });
-                        await refresh();
-                        setMessage(
-                          "Google project access revoked. Clients using this project grant require reauthorization.",
-                        );
-                      });
-                  }}
-                >
-                  Revoke project access
-                </button>
-                <p>
-                  <a
-                    href="https://security.google.com/settings/security/permissions"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Manage Google Account permissions
-                  </a>
-                </p>
-              </details>
-            </section>
-            <section>
-              <h3>Quota & access status</h3>
-              <pre>{JSON.stringify(status.quota, null, 2)}</pre>
-              <p>
-                Derived competitor metrics remain disabled until genuine YouTube
-                approval.
-              </p>
-              <a
-                href="https://developers.google.com/youtube/terms/derived-metrics-policy"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Official approval requirements
-              </a>
-            </section>
-            <section>
-              <h3>Your data</h3>
-              <button
-                disabled={busy}
-                onClick={() =>
-                  void run(async () => {
-                    const data = await call("export");
-                    const url = URL.createObjectURL(
-                      new Blob([JSON.stringify(data, null, 2)], {
-                        type: "application/json",
-                      }),
-                    );
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "creator-intelligence-export.json";
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  })
-                }
-              >
-                Export data
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Delete all data and this app’s Google connection? This cannot be undone.",
-                    )
-                  )
-                    void run(async () => {
-                      await call("delete_data");
-                      setCsrf("");
-                    });
-                }}
-              >
-                Delete app data
-              </button>
-              <p>
-                <a href="/privacy">Privacy & retention</a>
-              </p>
-              <button
-                onClick={() =>
-                  void run(async () => {
-                    await request("logout", {});
-                    setCsrf("");
-                  })
-                }
-              >
-                Sign out
-              </button>
-            </section>
-          </>
-        )}
-      </main>
+                clearSource={() => setSource("")}
+              />
+            )}
+            {page === "Settings" && <Settings ws={ws} />}
+          </div>
+          <footer className="content-foot">
+            <span>Research → idea → blueprint → local export</span>
+            <a href="/privacy">Privacy & data controls</a>
+            <a href="/terms">Terms of use</a>
+          </footer>
+        </main>
+      </div>
+      {confirmElement}
     </div>
-  );
-}
-function Provenance({ meta }: { meta: Row["meta"] }) {
-  return (
-    <p className="provenance">
-      {meta.source.startsWith("youtube_") ? (
-        <a href="https://www.youtube.com/" target="_blank" rel="noreferrer">
-          Source: YouTube
-        </a>
-      ) : meta.source === "synthetic" ? (
-        "Synthetic demonstration — not YouTube data"
-      ) : (
-        meta.source
-      )}{" "}
-      ·{" "}
-      {meta.ownership?.replaceAll("_", " ") ??
-        "source classification unavailable"}{" "}
-      ·{" "}
-      {meta.retrieved_at
-        ? new Date(meta.retrieved_at).toLocaleString()
-        : "No timestamp"}{" "}
-      · {meta.stale ? "Stored / refresh due" : "Stored observation"}
-      {meta.not_available ? " · " + meta.not_available : ""}
-    </p>
-  );
-}
-function DataTable({ rows }: { rows: Record<string, unknown>[] }) {
-  if (!rows.length) return <p className="empty">Not available</p>;
-  const keys = Object.keys(rows[0] ?? {});
-  return (
-    <div className="table">
-      <table>
-        <thead>
-          <tr>
-            {keys.map((k) => (
-              <th key={k}>{k.replaceAll("_", " ")}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              {keys.map((k) => (
-                <td key={k}>
-                  {r[k] === null || r[k] === undefined
-                    ? "Not available"
-                    : typeof r[k] === "object"
-                      ? JSON.stringify(r[k])
-                      : String(r[k])}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-function MetricChart({ rows }: { rows: Record<string, unknown>[] }) {
-  const metric =
-      "audienceWatchRatio" in (rows[0] ?? {}) ? "audienceWatchRatio" : "views",
-    points = rows.map((r) => r[metric]);
-  if (
-    points.length < 2 ||
-    points.some((v) => typeof v !== "number" || !Number.isFinite(v))
-  )
-    return null;
-  const values = points as number[],
-    max = Math.max(...values, 1),
-    coordinates = values
-      .map(
-        (v, i) =>
-          `${40 + (i * 520) / (values.length - 1)},${160 - (v / max) * 120}`,
-      )
-      .join(" ");
-  return (
-    <figure style={{ margin: "1rem 0" }}>
-      <svg
-        role="img"
-        aria-label={
-          metric + " from stored official observations; values in table below"
-        }
-        viewBox="0 0 600 200"
-        style={{ width: "100%", maxHeight: 240 }}
-      >
-        <path d="M40 25 V160 H565" fill="none" stroke="currentColor" />
-        <polyline
-          points={coordinates}
-          fill="none"
-          stroke="#b0652a"
-          strokeWidth="3"
-        />
-        <text x="4" y="35" fill="currentColor" fontSize="12">
-          {max.toLocaleString()}
-        </text>
-        <text x="4" y="165" fill="currentColor" fontSize="12">
-          0
-        </text>
-        <text x="40" y="190" fill="currentColor" fontSize="12">
-          {String(
-            rows[0]?.day ?? rows[0]?.elapsedVideoTimeRatio ?? "First sample",
-          )}
-        </text>
-        <text x="470" y="190" fill="currentColor" fontSize="12">
-          {String(
-            rows.at(-1)?.day ??
-              rows.at(-1)?.elapsedVideoTimeRatio ??
-              "Last sample",
-          )}
-        </text>
-      </svg>
-      <figcaption>
-        {metric} · source and timestamps above; exact values below
-      </figcaption>
-    </figure>
   );
 }

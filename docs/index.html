@@ -1,17 +1,234 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Creator Intelligence: an MIT-licensed, local-first MCP implementation for official YouTube research, owner analytics and reviewed production blueprints."><title>Creator Intelligence — Open-source MCP</title><link rel="stylesheet" href="site.css"><link rel="canonical" href="https://stevenbuglione.github.io/creator-intelligence/"></head><body>
-<a class="skip" href="#main">Skip to content</a><header><a class="brand" href="./">Creator Intelligence</a><nav aria-label="Main navigation"><a href="#install">Install</a><a href="#tools">MCP tools</a><a href="https://github.com/StevenBuglione/creator-intelligence">Source</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></nav></header>
-<main id="main"><div class="youtube-attribution"><a href="https://www.youtube.com/"><img src="youtube-developed-light.png" width="210" height="75" alt="Developed with YouTube"></a><span>Official API records retain their sources. Creative output is independent.</span></div><div class="hero"><span class="eyebrow">MIT licensed · TypeScript · Self-hosted · v0.1.0 release candidate</span><h1>Creator research.<br>One MCP. Your machine.</h1><p class="lead">An open-source MCP implementation that gives Claude and compatible clients official YouTube evidence, owner-authorized analytics, and original production blueprints.</p><p>Run the services locally. Review the creative decisions. Export a versioned blueprint as a local JSON file.</p><div class="actions"><a class="button" href="https://github.com/StevenBuglione/creator-intelligence">View the source on GitHub</a><a class="button secondary" href="#install">Install the MCP</a></div><p class="note">Developed by Steven Patrick Buglione as an individual. This website is published from the implementation repository’s <code>docs/</code> directory.</p></div>
-<section><h2>From evidence to a production brief</h2><div class="flow" aria-label="Production workflow"><span>Research<small>Official API records</small></span><span>Draft<small>Original ideas and scripts</small></span><span>Review<small>Owner approval</small></span><span>Export<small>Local blueprint JSON</small></span></div><div class="grid"><div><h3>Research with provenance</h3><p>Look up public channels and videos, inspect observed statistics, and connect your own channel for Analytics and Reporting data. Records retain their source, collection time and coverage. Unavailable metrics stay unavailable.</p></div><div><h3>Create with an explicit review step</h3><p>Save ideas, edit scripts and thumbnail briefs, and version a production blueprint. Claude draft writes require authorization for the exact content. Export the reviewed revision as local JSON with its source provenance.</p></div></div><p>Creator Intelligence is a standalone research and planning application. It exports local files and has no external production or publishing integration.</p></section>
-<section id="install"><h2>Install the actual implementation</h2><p>The repository includes the MCP server, API, worker, review UI, database layer, local blueprint export and tests. Use Node.js 24.19.x, pnpm 11.25.0, PowerShell 7 and Docker Compose for the maintained Windows setup.</p><pre><code>git clone https://github.com/StevenBuglione/creator-intelligence.git
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Creator Intelligence: an MIT-licensed, local-first MCP implementation for official YouTube research, owner analytics and reviewed production blueprints.">
+<meta name="color-scheme" content="light dark">
+<title>Creator Intelligence — Open-source MCP</title>
+<link rel="preload" href="fonts/newsreader-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/ibm-plex-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="site.css">
+<link rel="canonical" href="https://stevenbuglione.github.io/creator-intelligence/">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="Creator Intelligence home">
+      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" class="mark-bg"/><path d="M21 9.5a8.5 8.5 0 1 0 0 13" fill="none" class="mark-arc" stroke-width="3.2" stroke-linecap="round"/><circle cx="22.4" cy="16" r="2.6" class="mark-dot"/></svg>
+      <span>Creator Intelligence</span>
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="#today">What it does</a>
+      <a href="#install">Install</a>
+      <a href="#tools">MCP tools</a>
+      <a class="opt" href="#limits">Limits</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a class="gh" href="https://github.com/StevenBuglione/creator-intelligence">Source</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap">
+      <div class="reveal">
+        <span class="eyebrow">Open-source MCP server · MIT · v0.1.0 release candidate</span>
+        <h1>YouTube research and production planning, <em>served to Claude from your own machine.</em></h1>
+        <p class="lead">Creator Intelligence gives Claude and compatible MCP clients official YouTube evidence, owner-authorized analytics and original production blueprints. It runs locally with TypeScript, Docker Compose, PostgreSQL and Redis, and its workflow ends in a local blueprint JSON export.</p>
+        <div class="actions">
+          <a class="button primary" href="#install">Install the MCP</a>
+          <a class="button secondary" href="https://github.com/StevenBuglione/creator-intelligence">View the source on GitHub</a>
+        </div>
+        <p class="byline">Developed by Steven Patrick Buglione as an individual. This website is published from the implementation repository’s <code>docs/</code> directory.</p>
+        <div class="youtube-attribution">
+          <a href="https://www.youtube.com/"><img src="youtube-developed-light.png" width="210" height="75" alt="Developed with YouTube"></a>
+          <span>Official API records retain their sources. Creative output is independent.</span>
+        </div>
+      </div>
+      <figure class="manifest" aria-label="The 18 tools registered by the creator-intelligence MCP server">
+        <header><b>creator-intelligence</b><span>tools/list · 18</span></header>
+        <div class="group"><p>Evidence</p><ul><li>creator_status</li><li>creator_channels</li><li>creator_videos</li><li>creator_analytics</li></ul></div>
+        <div class="group"><p>Creative workspace</p><ul><li>creator_ideas</li><li>creator_blueprints</li><li>creator_blueprint</li><li>creator_blueprint_performance</li></ul></div>
+        <div class="group"><p>Review records</p><ul><li>creator_experiments</li><li>creator_blueprint_export</li><li>creator_export</li></ul></div>
+        <div class="group write"><p>Draft writes · one-use owner authorization</p><ul><li>creator_idea_save</li><li>creator_blueprint_save</li></ul></div>
+        <div class="group blocked"><p>Governed · disabled</p><ul><li>creator_outliers</li><li>creator_compare_competitors</li><li>creator_observed_vph</li><li>creator_derived_scores</li><li>creator_extended_public_history</li></ul></div>
+        <footer><span><i style="background:#7dc495"></i>Reads</span><span><i style="background:#e2b25e"></i>Authorized writes</span><span><i style="box-shadow:inset 0 0 0 1.5px #9d978a"></i>Returns DERIVED_METRIC_APPROVAL_REQUIRED</span></footer>
+      </figure>
+    </div>
+  </section>
+
+  <section class="block" id="today">
+    <div class="wrap">
+      <div class="section-head">
+        <div><span class="kicker">What it does today</span><h2>From evidence to a production brief</h2></div>
+        <p>Every record keeps its source, collection time and coverage. Unavailable metrics stay unavailable; nothing is filled in. The application is standalone: it has no external production or publishing integration.</p>
+      </div>
+      <ol class="ledger">
+        <li><span class="n">01</span><h3>Research</h3><p>Look up public channels and videos through the YouTube Data API. Uploads ingestion is bounded to 200 visible uploads per channel per sync, with quota accounting.</p><p>Public records expire after 30 days.</p></li>
+        <li><span class="n">02</span><h3>Owner reports</h3><p>Connect your own channel with read-only OAuth (<code>youtube.readonly</code>, <code>yt-analytics.readonly</code>) to store Analytics and Reporting data.</p><p>Reach reports can stay pending; missing values are never a measured zero.</p></li>
+        <li><span class="n">03</span><h3>Draft</h3><p>Save original ideas and version blueprints: hook, outline, script, thumbnail brief, sources and risks. An optional local model can suggest angles.</p><p>Claude’s draft writes need authorization for the exact content.</p></li>
+        <li><span class="n">04</span><h3>Export</h3><p>Download a saved revision as <code>creator_intelligence.blueprint.v1</code> JSON with its ID, revision, export time and provenance.</p><p>A stale revision is rejected.</p></li>
+      </ol>
+      <div class="boundary">
+        <div class="yes">
+          <h3>Included in this release</h3>
+          <ul>
+            <li>One authenticated MCP server over stdio or Streamable HTTP</li>
+            <li>A local review UI for research, ideas, blueprints and settings</li>
+            <li>Versioned privacy and terms acceptance; MCP sharing off by default</li>
+            <li>Local export, disconnect and deletion of your workspace data</li>
+          </ul>
+        </div>
+        <div class="no">
+          <h3>Not part of it</h3>
+          <ul>
+            <li>Uploading, editing, rendering or publishing videos</li>
+            <li>Scraping, quota bypass or invented competitor analytics</li>
+            <li>Derived scores and extended public-statistical history</li>
+            <li>Sending blueprints to another application</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div><span class="kicker">Architecture</span><h2>One MCP, local services behind it</h2></div>
+        <p>TypeScript services run with Docker Compose. Default ports bind to loopback. Secrets stay outside Git and Google tokens are encrypted at rest.</p>
+      </div>
+      <div class="arch" role="group" aria-label="Request path from an MCP client to local storage">
+        <div class="node dark"><h3>Claude or another MCP client</h3><p>Calls tools. Never receives Google credentials.</p><span class="port">stdio launcher or HTTP</span></div>
+        <div class="wire" aria-hidden="true"><span>bearer<br>token</span></div>
+        <div class="node"><h3>MCP server</h3><p>Same owner and policy checks as the REST API.</p><span class="port">localhost:4312/mcp</span></div>
+        <div class="wire" aria-hidden="true"><span>owner<br>policy</span></div>
+        <div class="stack-nodes">
+          <div class="node"><h3>Fastify API and review UI</h3><p>Session, CSRF and PKCE controls. Next.js interface for the owner.</p><span class="port">API :4311 · UI :4310</span></div>
+          <div class="node"><h3>Worker</h3><p>Syncs every six hours, purges hourly, backs up original drafts daily.</p><span class="port">BullMQ on Redis :6438</span></div>
+          <div class="node"><h3>PostgreSQL</h3><p>Public records and owner reports expire within 30 days; drafts persist until deleted.</p><span class="port">:6437</span></div>
+        </div>
+      </div>
+      <p class="arch-note">Google API calls come from the API and worker, using your own project’s key and read-only OAuth client. The MCP server reads stored observations and cannot initiate Google collection. No mandatory paid cloud dependency. Optional AI clients may process requested data under their own terms and settings. The project’s MIT license covers its code; dependencies and container images have their own licenses, described in <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/THIRD_PARTY_NOTICES.md">third-party notices</a>.</p>
+    </div>
+  </section>
+
+  <section class="block" id="install">
+    <div class="wrap">
+      <div class="section-head">
+        <div><span class="kicker">Install</span><h2>Run the actual implementation</h2></div>
+        <p>The repository includes the MCP server, API, worker, review UI, database layer, local blueprint export and tests. The maintained setup helpers target Windows with PowerShell 7.</p>
+      </div>
+      <ol class="steps">
+        <li>
+          <div>
+            <h3>Prepare your own Google project</h3>
+            <p>Install the toolchain, then create a dedicated Google Cloud project with YouTube Data API v3, YouTube Analytics API and YouTube Reporting API enabled.</p>
+            <ul class="prereq"><li>Node.js 24.19.x</li><li>pnpm 11.25.0</li><li>PowerShell 7</li><li>Docker Compose</li></ul>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Clone, initialize and start</h3>
+            <div class="code"><button class="copy" type="button" hidden>Copy</button><pre><code>git clone https://github.com/StevenBuglione/creator-intelligence.git
 cd creator-intelligence
 pnpm install --frozen-lockfile
 ./scripts/init-local.ps1 -OwnedChannelId 'YOUR_CHANNEL_ID' -GoogleProjectNumber 'YOUR_PROJECT_NUMBER'
 ./scripts/with-local-env.ps1 docker compose up --build -d
-./scripts/copy-owner-password.ps1</code></pre><p>Replace the identity placeholders with your values. Open <code>http://localhost:4310</code> and sign in with the generated owner password. <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/OPERATIONS.md">Follow the setup guide</a> for your API key, read-only OAuth client, channel consent and private credential storage.</p><h3>Register one connection with Claude Code</h3><pre><code>pnpm build
+./scripts/copy-owner-password.ps1</code></pre></div>
+            <p>Replace the identity placeholders with your values. <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/OPERATIONS.md">Follow the setup guide</a> for your API key, read-only OAuth client, channel consent and private credential storage.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Sign in and choose what to share</h3>
+            <p>Open <code>http://localhost:4310</code> and sign in with the generated owner password. Review and accept the privacy policy and terms. MCP sharing is a separate choice, off until you enable it. Local drafting works before Google is connected.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Register one connection with Claude Code</h3>
+            <div class="code"><button class="copy" type="button" hidden>Copy</button><pre><code>pnpm build
 $launcher = (Resolve-Path ./scripts/mcp-launch.ps1).Path
-claude mcp add --scope user creator-intelligence -- pwsh -NoProfile -File $launcher</code></pre><p>The local services must be running. The launcher loads your MCP token from private storage. A managed client may need administrator allowlisting. Authenticated Streamable HTTP is also available at <code>http://localhost:4312/mcp</code>; choose one transport.</p><div class="callout">Bring your own Google project, credentials and channel authorization. The source license does not provide access to the developer’s deployment, quota or Google approval.</div></section>
-<section id="tools"><h2>What the MCP exposes</h2><p>Eighteen registered tools share the API’s authorization and policy checks. Five governed tools are present only to return an explicit blocked response.</p><div class="table-wrap"><table><thead><tr><th>Purpose</th><th>Tools</th><th>Behavior</th></tr></thead><tbody><tr><td>Evidence</td><td><code>creator_status</code><br><code>creator_channels</code><br><code>creator_videos</code><br><code>creator_analytics</code></td><td>Read local state and available official records.</td></tr><tr><td>Creative workspace</td><td><code>creator_ideas</code>, <code>creator_blueprints</code>, <code>creator_blueprint</code>, <code>creator_blueprint_performance</code></td><td>Read original plans and linked owner performance.</td></tr><tr><td>Review records</td><td><code>creator_experiments</code>, <code>creator_blueprint_export</code>, <code>creator_export</code></td><td>Read the owner’s workspace records.</td></tr><tr><td>Draft writes</td><td><code>creator_idea_save</code><br><code>creator_blueprint_save</code></td><td>Require one-use authorization for the exact draft.</td></tr><tr><td>Governed analytics</td><td><code>creator_outliers</code>, <code>creator_compare_competitors</code>, <code>creator_observed_vph</code>, <code>creator_derived_scores</code>, <code>creator_extended_public_history</code></td><td>Disabled. Additional metrics are not implemented or approved.</td></tr></tbody></table></div><p><a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/MCP.md">Read the tool reference and argument examples</a>. Source text is treated as untrusted data. An MCP request cannot authorize its own draft write. Blueprint export returns the requested revision without sending it to another service.</p></section>
-<section><h2>One MCP, local services behind it</h2><p>TypeScript services run with Docker Compose: Fastify API, Next.js review UI, background worker, MCP transport, PostgreSQL and Redis. The default ports bind to loopback. Secrets stay outside Git; Google tokens are encrypted at rest.</p><p>No mandatory paid cloud dependency. Optional AI clients may process requested data under their own terms and settings. The project’s MIT license covers its code; dependencies and container images have their own licenses, described in <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/THIRD_PARTY_NOTICES.md">third-party notices</a>.</p></section>
-<section><h2>A release candidate with visible limits</h2><p>The repository includes the feature ledger, acceptance plan, automated tests and <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/VERIFICATION.md">actual verification results</a>. The 151-feature backlog is a plan, not a list of completed capabilities.</p><ul><li>Owner OAuth and Claude registration require installation-specific setup and verification. Source distribution does not share the maintainer’s credentials.</li><li>Custom scores and extended public-statistical retention remain disabled pending the relevant accepted YouTube authorization and implementation.</li><li>No scraping, quota bypass, invented competitor analytics or automatic YouTube publication.</li><li>The app enforces versioned privacy/terms acceptance and optional MCP sharing. Google audit review requires deployment-specific evidence and an appropriate reviewer-access arrangement.</li></ul><p><a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/known-gaps.md">See all current limitations</a> · <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/CONTRIBUTING.md">Contribute</a></p></section></main>
-<footer><p>Creator Intelligence · Steven Patrick Buglione · <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/LICENSE">MIT license</a></p><p><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="https://github.com/StevenBuglione/creator-intelligence/issues">Project contact</a> · <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a> · <a href="https://policies.google.com/privacy">Google Privacy Policy</a></p></footer></body></html>
+claude mcp add --scope user creator-intelligence -- pwsh -NoProfile -File $launcher</code></pre></div>
+            <p>The local services must be running. The launcher loads your MCP token from private storage. A managed client may need administrator allowlisting. Authenticated Streamable HTTP is also available at <code>http://localhost:4312/mcp</code>; choose one transport.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Verify locally</h3>
+            <div class="code"><button class="copy" type="button" hidden>Copy</button><pre><code>./scripts/with-local-env.ps1 pnpm verify</code></pre></div>
+            <p>Runs lint, TypeScript, unit and integration tests, the production build and desktop/mobile browser workflows against separate test and demo databases with synthetic providers. It makes no Google API calls.</p>
+          </div>
+        </li>
+      </ol>
+      <div class="callout">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3 2.5 16.5h15z"/><path d="M10 8v3.75M10 14.1v.15"/></svg>
+        <p>Bring your own Google project, credentials and channel authorization. The source license does not provide access to the developer’s deployment, quota or Google approval.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tools">
+    <div class="wrap">
+      <div class="section-head">
+        <div><span class="kicker">MCP tools</span><h2>What the MCP exposes</h2></div>
+        <p>Eighteen registered tools share the API’s authorization and policy checks. Five governed tools are present only to return an explicit blocked response.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Purpose</th><th scope="col">Tools</th><th scope="col">Behavior</th></tr></thead>
+          <tbody>
+            <tr><td>Evidence</td><td><code>creator_status</code><code>creator_channels</code><code>creator_videos</code><code>creator_analytics</code></td><td><span class="tag">Read</span><br>Local state and available official records.</td></tr>
+            <tr><td>Creative workspace</td><td><code>creator_ideas</code><code>creator_blueprints</code><code>creator_blueprint</code><code>creator_blueprint_performance</code></td><td><span class="tag">Read</span><br>Original plans and linked owner performance.</td></tr>
+            <tr><td>Review records</td><td><code>creator_experiments</code><code>creator_blueprint_export</code><code>creator_export</code></td><td><span class="tag">Read</span><br>The owner’s workspace records.</td></tr>
+            <tr><td>Draft writes</td><td><code>creator_idea_save</code><code>creator_blueprint_save</code></td><td><span class="tag w">Authorized write</span><br>Require one-use authorization for the exact draft.</td></tr>
+            <tr class="blocked"><td>Governed analytics</td><td><code>creator_outliers</code><code>creator_compare_competitors</code><code>creator_observed_vph</code><code>creator_derived_scores</code><code>creator_extended_public_history</code></td><td><span class="tag x">Disabled</span><br>Additional metrics are not implemented or approved.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="after-table">All calls use the outer argument object <code>{"input": {...}}</code>, for example <code>creator_analytics({"input":{"kind":"overview"}})</code>. <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/MCP.md">Read the tool reference and argument examples</a>. Source text is treated as untrusted data. An MCP request cannot authorize its own draft write. Blueprint export returns the requested revision without sending it to another service.</p>
+    </div>
+  </section>
+
+  <section class="block" id="limits">
+    <div class="wrap">
+      <div class="section-head">
+        <div><span class="kicker">Release status</span><h2>A release candidate with visible limits</h2></div>
+        <p>The repository includes the feature ledger, acceptance plan, automated tests and <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/VERIFICATION.md">actual verification results</a>. The 151-feature backlog is a plan, not a list of completed capabilities.</p>
+      </div>
+      <ul class="limits">
+        <li><strong>Installation-specific setup</strong>Owner OAuth and Claude registration require installation-specific setup and verification. Source distribution does not share the maintainer’s credentials.</li>
+        <li><strong>Governed metrics stay off</strong>Custom scores and extended public-statistical retention remain disabled pending the relevant accepted YouTube authorization and implementation.</li>
+        <li><strong>Official data only</strong>No scraping, quota bypass, invented competitor analytics or automatic YouTube publication.</li>
+        <li><strong>Consent is enforced</strong>The app enforces versioned privacy/terms acceptance and optional MCP sharing. Google audit review requires deployment-specific evidence and an appropriate reviewer-access arrangement.</li>
+      </ul>
+      <p class="links"><a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/docs/known-gaps.md">See all current limitations</a><a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/CONTRIBUTING.md">Contribute</a></p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>Creator Intelligence · Steven Patrick Buglione · <a href="https://github.com/StevenBuglione/creator-intelligence/blob/codex/open-source-release/LICENSE">MIT license</a></p>
+    <nav aria-label="Footer"><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a><a href="https://github.com/StevenBuglione/creator-intelligence/issues">Project contact</a><a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a><a href="https://policies.google.com/privacy">Google Privacy Policy</a></nav>
+  </div>
+</footer>
+<script>
+// Progressive enhancement: copy buttons for command blocks. No tracking, no network.
+for (const button of document.querySelectorAll(".copy")) {
+  if (!navigator.clipboard) continue;
+  button.hidden = false;
+  button.addEventListener("click", async () => {
+    const text = button.parentElement.querySelector("code").innerText;
+    try { await navigator.clipboard.writeText(text); button.textContent = "Copied"; button.dataset.done = ""; }
+    catch { button.textContent = "Copy failed"; }
+    setTimeout(() => { button.textContent = "Copy"; delete button.dataset.done; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
