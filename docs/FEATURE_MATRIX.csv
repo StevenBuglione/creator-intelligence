@@ -1,0 +1,152 @@
+group,feature,implementation,availability,phase,caveat
+Home,Personalized home feed,Rank relevant actionable cards using own metrics and research signals,L,P2,Scoring from YouTube API gated until approved
+Home,Title improvement card,Suggest alternatives and show title history,L,P1,Do not pretend predicted CTR is factual
+Home,Thumbnail improvement card,Local visual critique plus alternative mockups,L,P1,Heuristic score not YouTube CTR
+Home,Missing description card,Detect missing descriptions and draft copy,D,P1,Publishing disabled until write auth and approval
+Home,Missing tags card,Metadata completeness and optional tags,D,P2,YouTube says tags have minimal discovery impact
+Home,Trending keywords card,Topic signal from permitted inputs,A,P1,No exact YouTube monthly search counts
+Home,Niche outlier card,Cohort analysis of tracked public stats,G,P1,Permission gate for derived metrics and history
+Home,Related-video traffic card,Owner traffic source reports,D,P1,Some traffic source details are withheld
+Home,Milestone achievement cards,Own channel record tracking,D,P2,Compare like-for-like view definitions
+Home,Regenerate dismiss save cards,Feedback and database state,L,P2,Respect data deletion when linked sources revoked
+Research,Public channel lookup,channels.list handle or ID,D,P0,Search by name uses search quota
+Research,Public video lookup,videos.list and videos.batchGetStats,D,P0,Only public metrics
+Research,Keyword research query,search.list plus topic relevance analysis,A,P1,Search results do not reveal search volume
+Research,Related keyword suggestions,Local embedding and manually supplied topics,A,P1,Label source and confidence
+Research,Keyword question suggestions,LLM questions and permitted signals,A,P2,Not measured YouTube demand
+Research,Estimated keyword volume,Optional calibrated proxy not exact count,G,P3,Do not present fabricated monthly volume
+Research,Keyword competition score,Size mix diversity observed SERP features,G,P2,Derived score permission
+Research,Overall keyword opportunity score,Documented transparent composite metric,G,P1,Derived score permission
+Research,Rising keywords,Recent topic velocity where observed,G,P1,May be based on video momentum not searches
+Research,Top search terms for own channel,Analytics API traffic source detail,D,P1,API report may suppress terms
+Research,Personalized daily ideas,LLM grounded in owned performance and watched topics,L,P1,Do not guarantee views
+Research,Custom keyword ideas,Prompted generation from user selected topic,L,P1,No exact rankings inferred
+Research,View prediction labels,Backtested prior-like-video forecasting,G,P3,Avoid prediction until enough data
+Research,Save dismiss restore ideas,Persistent preference state,L,P1,No YouTube dependency
+Research,Outliers video search,Tracked cohort excess performance ratios,G,P1,Historical competitor data unavailable before collection
+Research,Outliers Shorts search,Tracked Shorts and creatorContentType where owned,G,P1,Competitor Shorts classification may be uncertain
+Research,Outliers channel discovery,Find standout creators within monitored sample,G,P2,Discovery subject to search limits
+Research,Outliers thumbnail search,Compare observed thumbnail patterns on outlier videos,G,P2,Thumbnail display rules apply
+Research,Outlier filters by age views subscribers VPH,Filter indexed public stats and derived scores,G,P1,VPH only from snapshots
+Research,Most viewed videos browser,Search results by permitted order and tracked set,D,P1,Not universe-wide exhaustive
+Research,Trending videos,mostPopular endpoint and tracked-niche velocity,D,P1,Not algorithmic platform-wide trend feed
+Research,Trend alerts,Hourly/daily signal thresholds and digest,G,P2,Threshold from derived scores permission
+Research,Niche gaps,Cluster underserved topics by monitored pool,G,P2,Relative to monitored sample only
+Research,Evergreen topics,History of stable interest in own and approved stats,G,P2,Do not overclaim evergreen status
+Research,Videos sending own channel traffic,Owned traffic sources,D,P1,Subject to API detail availability
+Research,Answer your audience,Mine own comments for questions,D,P1,Avoid sensitive profile inference
+Research,Research topic filtering,Topic language date duration views channel-size,D,P1,Public data subsets only
+Research,Research CSV exports,Compliant filtered export,D,P1,Retention and disclosure apply
+Competitors,Competitor watchlist,Track IDs and handles with priority scheduler,D,P0,No data before first fetch
+Competitors,Bulk-add competitor channels,Batch resolve known handles and IDs,D,P1,Name lookup requires search calls
+Competitors,Top competitor videos,Playlist items plus video stats,D,P0,Only visible uploads
+Competitors,Competitor channel comparison,Public channel counts and daily deltas,G,P1,Historical statistical storage needs approval >30d
+Competitors,48h 7d 30d channel growth,Snapshots from tracking start,G,P1,Pretracking growth unavailable
+Competitors,12 month channel history,Retain permitted public statistics,G,P3,36 month cap after approval
+Competitors,Video views per hour,Delta of polled public view counts,G,P1,Estimated from observation window not native real-time
+Competitors,Views after upload curves,Snapshot trajectory,G,P2,Only available after observation starts
+Competitors,Views vs channel median,Age-matched cohort benchmark,G,P1,Need N and confidence labels
+Competitors,Subscriber changes,Public rounded counts between snapshots,G,P1,Rounded counts introduce step artifacts
+Competitors,Top keyword exports,Video/title phrase analysis and official tags if exposed,A,P2,Not actual competitors search query data
+Competitors,Competitor thumbnail gallery,Render official public thumbnail references,D,P1,30-day refresh/deletion of metadata
+Competitors,Competitive topic overlap,Embedding similarity between public titles,G,P2,Permission for derived categorization from API
+Competitors,Comparisons by Shorts and long-form,Separate cohorts and explain classification confidence,A,P1,Own content creatorContentType authoritative if available
+Owned Analytics,Connect own YouTube channel,Google OAuth via server-side PKCE,D,P0,No service accounts for standard personal channels
+Owned Analytics,Own channel overview,Analytics API channel summaries,D,P0,Data lag may differ from Studio
+Owned Analytics,Video watch time,Analytics API daily time series,D,P0,Owned authorized data only
+Owned Analytics,Retention curve,Analytics API elapsedVideoTimeRatio,D,P1,Missing for insufficient data
+Owned Analytics,Relative retention,Analytics API relativeRetentionPerformance,D,P2,YouTube-defined metric not custom
+Owned Analytics,Traffic sources,Analytics API reports,D,P1,Some details may be omitted
+Owned Analytics,Thumbnail impressions,Reporting API reach basic a1,D,P1,Reports asynchronous after jobs created
+Owned Analytics,Thumbnail CTR,Reporting API reach basic a1,D,P1,Not competitor CTR
+Owned Analytics,Engaged Shorts views,Analytics or Reporting API engagedViews metric,D,P1,Not identical to public Shorts view counts
+Owned Analytics,Subscriber gain and loss,Analytics API metrics,D,P1,Channel and eligible video granularity
+Owned Analytics,Audience geography and device,Analytics or Reporting API,D,P2,Audience thresholds and privacy suppression
+Owned Analytics,Audience demographic breakdown,Analytics API coarse aggregates,D,P3,Never infer protected traits for individuals
+Owned Analytics,Subscribers by video,Owner subscribersGained and lost,D,P1,Do not attribute all subs to video
+Owned Analytics,Latest public subscribers,subscriptions.list myRecentSubscribers,D,P3,Only public subscriptions limited result count
+Owned Analytics,Subscriber viewing habits,Display licensed or owned aggregates only,X,P4,Other videos watched by each subscriber not available
+Owned Analytics,When your viewers are online,Provide manual Studio import or own outcome-based heuristic,A,P3,No equivalent viewer online heatmap API identified
+Owned Analytics,Best time to post,Compare owned launch cohorts by local weekday/time,A,P2,Observational correlation not viewer-activity ground truth
+Owned Analytics,Revenue and RPM,Optional yt-analytics-monetary.readonly,D,P2,Monetized channels and availability only
+Owned Analytics,Real-time stats bar,Frequent public polling + own Analytics where available,A,P1,Not guaranteed minute-by-minute Studio parity
+Owned Analytics,Historical own-channel trends,Authorized analytics retention subject to consent,D,P1,Delete upon revoked consent
+Owned Analytics,Channel audit,Summarize retention traffic metadata and growth,L,P1,Owner-only calculations
+Owned Analytics,Achievements,Thresholds and personal records,L,P2,Not YouTube official award
+Owned Analytics,Playlist performance,Analytics playlist reports,D,P3,Only playlists with supported reports
+Optimize,Title grading,Local rules and model-assisted qualitative critique,L,P1,No guaranteed CTR model
+Optimize,Title generator,Local LLM options aligned with audience and promise,L,P1,Audit originality and specificity
+Optimize,Description generator,Local LLM with factual source constraints,L,P1,No unsupported claims
+Optimize,Tag recommendations,Topic extraction plus editorial keyword spelling,L,P2,Tags have minimal discovery impact
+Optimize,Metadata optimize checklist,15-point editorial review,L,P1,Independent custom rubric
+Optimize,SEO score,Locally labeled editorial completeness indicator,G,P2,Derived YouTube-metric score must be approved
+Optimize,Keyword ranking inspector,Per-query search result observation,A,P3,Not universal rank and quota expensive
+Optimize,Ranked tag scores,Query-sample observations,A,P3,Location personalization and quota caveats
+Optimize,Controversial keyword warnings,Local policy and editorial lexicon,L,P2,Not official monetization guarantee
+Optimize,Thumbnail critique,Vision-language model of user supplied or permitted image,L,P1,Subjective critique no CTR access
+Optimize,Thumbnail competitor preview,Simulated search/home/mobile layout,L,P1,Mock composition not actual YouTube placement
+Optimize,Thumbnail variations,Local graphics templates and optional image model,L,P2,GPU and quality limitations
+Optimize,Thumbnail title packaging pairs,Evaluate pair coherence with rubric,L,P1,A/B tests need native YouTube Studio setup
+Optimize,Video review,Local audio visual timeline + transcript analysis,L,P2,Authorized media assets only
+Optimize,Hook review,First 15-60s transcript and scene check,L,P1,Estimate not actual retention
+Optimize,Pacing and rehook review,Scene cut and voice activity rhythm,L,P2,Heuristic
+Optimize,B-roll and editing review,Timeline event metadata plus vision analysis,L,P2,On owned media
+Optimize,Optimize existing uploaded video,Read performance and propose edits,D,P1,Changes approval gated
+Optimize,Update title description tags,videos.update when separately authorized,O,P3,Never auto-publish changes
+Optimize,Set long-form thumbnail,thumbnails.set with write scope,O,P3,Requires OAuth permission; Shorts differ
+Optimize,Title and description translations,Local language model drafts,L,P3,Human review before publishing
+Optimize,Draft video local upload,Analyze existing ContentOS artifacts or uploaded local file,L,P2,No need to send media to a third party
+Create,Idea to blueprint,Topic -> title -> thumbnail brief -> outline -> sources,L,P1,Record provenance
+Create,Blueprint save and share,Versioned plans and private links,L,P1,Private by default
+Create,Script writer,Local model with hook beat structure and duration,L,P1,Avoid using stolen competitor scripts
+Create,Script tone and format options,Prompt templates for educational storytelling,L,P1,Editable
+Create,Generate video description and tags,Reuse optimizer,L,P1,Source checked
+Create,Thumbnail editor,Canvas layers or Remotion templates,L,P2,True editable layers
+Create,AI thumbnail generation,ComfyUI or supported local image model optional,O,P3,GPU and model licenses need verification
+Create,Likeness consistent character asset,Only user consented personal image or owned mascot,O,P3,No unauthorized impersonation
+Create,AI video generator,Local optional video models or ContentOS Remotion pipeline,O,P4,Not quality parity with hosted models
+Create,AI Shorts generator,Repurpose owned clips in Remotion,L,P2,Do not download competitor audiovisual media
+Create,Long-form clipping,Transcription segmentation reframing FFmpeg,L,P2,Own or licensed source only
+Create,Captions subtitle burn-in,ASR local model and Remotion styling,L,P2,Caption errors require review
+Create,Remix,Rework own script storyboard and visual treatment,L,P2,No copying competitors
+Create,Script voiceover pipeline,Local TTS optional existing paid provider adapter,O,P3,No mandatory cloud provider
+Create,AI short concept variations,Fast prompt-to-storyboard variants,L,P2,Final rendering path may differ
+Create,Asset library and exports,Store own media and render jobs locally,L,P2,Object storage optional
+Create,Publish to YouTube,Separate optional YouTube upload worker,O,P4,Uploads subject to API audit and OAuth scopes
+Create,Output to ContentOS,Create project from blueprint with ID provenance,L,P1,Idempotent outbound events
+Extension,YouTube watch-page scorecard,Optional Chrome MV3 extension injecting light UI,L,P3,Site DOM unstable
+Extension,Shorts scorecard,Optional extension panel,L,P3,Public data only
+Extension,Search panel,Optional extension + backend results,A,P3,Search quota and ordering constraints
+Extension,Views per hour badge,Show observed velocity from backend,G,P3,No observed data means no badge
+Extension,Outlier badge,Show eligible approved score,G,P3,Hide until approval
+Extension,Video weight class,Channel-relative popularity heuristic,G,P3,No exact proprietary vidiq algorithm
+Extension,Engagement rate badge,Approved ratio of public views likes comments,G,P3,Not viewer satisfaction ground truth
+Extension,Video tags display,Data API tags when accessible,D,P3,Some tags not exposed
+Extension,Top keywords display,Phrase extraction from titles and tags,A,P3,Not actual channel search traffic
+Extension,Search thumbnail comparison,Mock and selected search videos,L,P3,Not actual placements
+Extension,Most viewed and trending panel,Backend filters,D,P3,Limited to data sources
+Extension,Channel audit shortcut,Deep link into app channel audit,L,P3,User auth required
+Extension,Real-time stats widget,Backend observed metrics,A,P3,Snapshot freshness indicator
+Extension,Achievements widget,Backend milestone feed,L,P3,Custom badges
+Extension,Advanced embed,Official YouTube IFrame Player customization,D,P4,Must obey Player policies
+Extension,CSV export,Export permitted selected rows,L,P3,Disclosure and TTL rules
+Community,Comment list and filtering,Official commentThreads.list for own videos,D,P2,Quota/rate limited
+Community,Comment AI reply drafts,Local LLM suggestions,L,P2,Never post without approval
+Community,Comment question extraction,Aggregate own comments into topic prompts,L,P1,No sensitive audience profiling
+Community,Viewer sentiment analysis,Aggregate comment signals for review,G,P3,Need approved derived metric use case
+Community,Frequently asked questions,Cluster own comment questions,L,P2,Remove user identity where unnecessary
+Community,Moderation assistance,Flag own comments for human review,O,P4,Write permission for actions
+Integrations,AI coach fast deep max modes,Local agents with retrieval and tools,L,P2,Performance constrained by local model
+Integrations,AI context attachments,User-provided images videos and permitted references,L,P2,Rights and privacy
+Integrations,MCP tools for AI agents,MCP stdio and protected streamable HTTP,L,P1,Read-only default
+Integrations,REST API,Fastify OpenAPI and typed SDK,L,P0,Session auth rate limiting
+Integrations,ContentOS backlog sync,Typed adapter with manual accept button,L,P1,No autonomous publishing
+Integrations,Trend digests and alerts,Configurable scheduled email/webhook/dashboard,L,P2,Notify only on meaningful signals
+Integrations,Mobile app,Mobile-first responsive PWA,L,P2,Native app unnecessary
+Integrations,Creator lessons,Curated local knowledge base and links,L,P3,Do not copy proprietary paid courses
+Integrations,Step-by-step growth plan,Data-grounded agent suggestions,L,P2,Forecast caveats
+Integrations,One-on-one human coaching,Not self-hostable as a software feature,X,P4,Could substitute self-review or hire coach
+Integrations,Multiple channels teams,Multi-tenant permissions and separate OAuth,L,P4,Personal MVP single tenant
+Integrations,Instagram competitive intelligence,Optional Meta Instagram Graph API where permitted,O,P4,Requires additional Meta access/review
+Integrations,Instagram publishing,Optional separate Graph API OAuth,O,P4,Not phase 1
+Integrations,Export feedback knowledge,CSV JSON Markdown and agent context,L,P2,Exclude stale third party fields

@@ -1,0 +1,6 @@
+{
+  "name": "@ci/youtube",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "@ci/config",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

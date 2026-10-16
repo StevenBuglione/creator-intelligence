@@ -1,0 +1,70 @@
+{
+  "name": "creator-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24.19.0 <25"
+  },
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "api": "tsx apps/api/src/main.ts",
+    "worker": "tsx apps/worker/src/main.ts",
+    "mcp": "tsx apps/mcp/src/main.ts",
+    "web": "pnpm --dir apps/web dev",
+    "db:migrate": "tsx packages/db/src/migrate.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint apps packages scripts tests --ignore-pattern '*.ps1' --ignore-pattern '*.py' --ignore-pattern '.next/**' --ignore-pattern 'next-env.d.ts'",
+    "format": "prettier --write apps packages tests scripts --ignore-unknown",
+    "build": "tsx scripts/build.ts",
+    "test": "vitest run",
+    "test:quota": "vitest run tests/quota.test.ts",
+    "verify:policy": "vitest run tests/policy.test.ts",
+    "test:e2e": "playwright test",
+    "test:integration:google": "tsx scripts/verify-google.ts",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.3",
+    "@fastify/cors": "11.3.1",
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/swagger": "9.9.2",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "bullmq": "6.3.15",
+    "csv-parse": "7.0.3",
+    "drizzle-orm": "0.45.4",
+    "fastify": "5.12.7",
+    "google-auth-library": "11.3.1",
+    "ioredis": "6.0.0",
+    "luxon": "3.7.2",
+    "next": "16.4.2",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.1",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/luxon": "3.7.6",
+    "eslint": "10.13.0",
+    "typescript-eslint": "8.71.2",
+    "prettier": "3.9.10",
+    "lefthook": "2.2.2",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  },
+  "license": "MIT",
+  "description": "Local-first creator research and production planning through one authenticated MCP server.",
+  "homepage": "https://stevenbuglione.github.io/creator-intelligence/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/StevenBuglione/creator-intelligence.git"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "@ci/api",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

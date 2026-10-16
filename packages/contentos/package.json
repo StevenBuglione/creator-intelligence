@@ -1,0 +1,6 @@
+{
+  "name": "@ci/contentos",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

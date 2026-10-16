@@ -1,0 +1,6 @@
+pre-commit:
+  commands:
+    typecheck:
+      run: pnpm typecheck
+    policy:
+      run: pnpm verify:policy

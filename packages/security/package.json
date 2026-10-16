@@ -1,0 +1,6 @@
+{
+  "name": "@ci/security",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

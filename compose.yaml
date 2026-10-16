@@ -1,0 +1,79 @@
+name: creator-intelligence
+services:
+  postgres:
+    image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+    environment:
+      POSTGRES_USER: creator
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Run scripts/init-local.ps1}
+      POSTGRES_DB: creator_intelligence
+    ports: ['127.0.0.1:6437:5432']
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U creator -d creator_intelligence']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    ports: ['127.0.0.1:6438:6379']
+    command: ['redis-server','--appendonly','yes']
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ['CMD','redis-cli','ping']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  api:
+    build: .
+    command: ['node','dist/apps/api/src/main.js']
+    env_file: ${CI_ENV_FILE:?Private environment file required}
+    environment:
+      DATABASE_URL: postgresql://creator:${DB_PASSWORD}@postgres:5432/creator_intelligence
+      REDIS_URL: redis://redis:6379
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      YOUTUBE_DATA_API_KEY: ${YOUTUBE_DATA_API_KEY:-}
+      CI_SECRET_DIR: /run/creator-secrets
+      BACKUP_DIR: /app/backups/automatic
+    ports: ['127.0.0.1:4311:4311']
+    healthcheck:
+      test: ['CMD','node','-e',"fetch('http://localhost:4311/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes: ['${CI_SECRET_DIR}:/run/creator-secrets:ro', 'draftbackups:/app/backups']
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  worker:
+    build: .
+    command: ['node','dist/apps/worker/src/main.js']
+    environment:
+      REDIS_URL: redis://redis:6379
+      CI_API_INTERNAL: http://api:4311
+      WORKER_TOKEN: ${WORKER_TOKEN:?Worker token required}
+    depends_on:
+      api: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  mcp:
+    build: .
+    command: ['node','dist/apps/mcp/src/http.js']
+    environment:
+      CI_API_INTERNAL: http://api:4311
+      HOST: 0.0.0.0
+      MCP_TOKEN: ${MCP_TOKEN:?MCP token required}
+    ports: ['127.0.0.1:4312:4312']
+    depends_on:
+      api: {condition: service_healthy}
+  web:
+    build: .
+    command: ['node','node_modules/next/dist/bin/next','start','apps/web','--hostname','0.0.0.0','--port','4310']
+    environment: {CI_API_INTERNAL: 'http://api:4311'}
+    ports: ['127.0.0.1:4310:4310']
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  pgdata:
+  redisdata:
+  draftbackups:

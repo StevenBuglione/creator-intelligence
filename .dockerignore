@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/.next-e2e
+**/*.tsbuildinfo
+dist
+.git
+.env*
+evidence
+data
+backups
+test-results
+playwright-report
+handoff
+**/*.dpapi
+**/*secret*.json
+**/token*.json

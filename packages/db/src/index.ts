@@ -1,0 +1,406 @@
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
+import { createHash, randomUUID } from "node:crypto";
+import { AppError, type Json, type Meta } from "../../domain/src/index.js";
+
+export interface Entity {
+  id: string;
+  owner_id: string;
+  kind: string;
+  body: Record<string, Json>;
+  version: number;
+  meta: Meta;
+  expires_at: string | null;
+  updated_at: string;
+}
+export interface Observation {
+  id: string;
+  entity_id: string;
+  kind: string;
+  data: Record<string, Json>;
+  meta: Meta;
+  observed_at: string;
+  expires_at: string | null;
+}
+export interface Connection {
+  owner_id: string;
+  channel_id: string;
+  scopes: string[];
+  encrypted: string;
+  version: number;
+  status: string;
+  verified_at: string;
+}
+export interface Session {
+  owner_id: string;
+  csrf: string;
+  expires_at: string;
+}
+export interface Delivery {
+  id: string;
+  owner_id: string;
+  blueprint_id: string;
+  revision: number;
+  payload: Record<string, Json>;
+  payload_hash: string;
+  target: string;
+  state: string;
+  attempts: number;
+  expires_at: string;
+  response: Record<string, Json> | null;
+}
+
+const migration = `
+CREATE TABLE IF NOT EXISTS users(id uuid PRIMARY KEY,password_hash text NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS sessions(token_hash text PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,csrf text NOT NULL,expires_at timestamptz NOT NULL);
+CREATE TABLE IF NOT EXISTS oauth_states(state_hash text PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,session_hash text NOT NULL REFERENCES sessions(token_hash) ON DELETE CASCADE,encrypted text NOT NULL,expires_at timestamptz NOT NULL);
+CREATE TABLE IF NOT EXISTS oauth_connections(owner_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,channel_id text NOT NULL,scopes jsonb NOT NULL,encrypted text NOT NULL,version int NOT NULL DEFAULT 1,status text NOT NULL,verified_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS entities(owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,kind text NOT NULL,id text NOT NULL,body jsonb NOT NULL,version int NOT NULL DEFAULT 1,meta jsonb NOT NULL,expires_at timestamptz,updated_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(owner_id,kind,id));
+CREATE INDEX IF NOT EXISTS entities_expiry ON entities(expires_at);
+CREATE TABLE IF NOT EXISTS observations(id uuid PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,entity_id text NOT NULL,kind text NOT NULL,data jsonb NOT NULL,meta jsonb NOT NULL,observed_at timestamptz NOT NULL,expires_at timestamptz,dedupe_key text NOT NULL,UNIQUE(owner_id,kind,dedupe_key));
+CREATE INDEX IF NOT EXISTS observations_lookup ON observations(owner_id,entity_id,kind,observed_at);
+CREATE TABLE IF NOT EXISTS quota_ledger(project text NOT NULL,day_pt text NOT NULL,bucket text NOT NULL,units int NOT NULL,PRIMARY KEY(project,day_pt,bucket));
+CREATE TABLE IF NOT EXISTS quota_calls(id bigserial PRIMARY KEY,project text NOT NULL,day_pt text NOT NULL,bucket text NOT NULL,method text NOT NULL,at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS deliveries(id text PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,blueprint_id text NOT NULL,revision int NOT NULL,payload jsonb NOT NULL,payload_hash text NOT NULL,target text NOT NULL,state text NOT NULL,attempts int NOT NULL DEFAULT 0,expires_at timestamptz NOT NULL,response jsonb,updated_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS action_approvals(token_hash text PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,session_hash text NOT NULL REFERENCES sessions(token_hash) ON DELETE CASCADE,blueprint_id text NOT NULL,revision int NOT NULL,payload_hash text NOT NULL,target text NOT NULL,expires_at timestamptz NOT NULL,consumed boolean NOT NULL DEFAULT false);
+CREATE TABLE IF NOT EXISTS audit_log(id bigserial PRIMARY KEY,owner_id uuid REFERENCES users(id) ON DELETE CASCADE,operation text NOT NULL,entity_id text,at timestamptz NOT NULL DEFAULT now());
+`;
+export class Store {
+  readonly pool: Pool;
+  readonly db: ReturnType<typeof drizzle>;
+  constructor(url: string) {
+    this.pool = new Pool({
+      connectionString: url,
+      max: 8,
+      connectionTimeoutMillis: 5000,
+    });
+    this.db = drizzle(this.pool);
+  }
+  async close() {
+    await this.pool.end();
+  }
+  async exclusive<T>(key: string, work: () => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("SELECT pg_advisory_lock(hashtextextended($1,0))", [
+        key,
+      ]);
+      return await work();
+    } finally {
+      await client.query("SELECT pg_advisory_unlock(hashtextextended($1,0))", [
+        key,
+      ]);
+      client.release();
+    }
+  }
+  async migrate() {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(873142)`);
+      await tx.execute(
+        sql`CREATE TABLE IF NOT EXISTS migrations(version int PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())`,
+      );
+      const checksum = createHash("sha256").update(migration).digest("hex");
+      const old = await tx.execute(
+        sql`SELECT checksum FROM migrations WHERE version=1`,
+      );
+      if (old.rows.length) {
+        if (old.rows[0]?.checksum !== checksum)
+          throw new Error("Migration checksum mismatch");
+        return;
+      }
+      await tx.execute(sql.raw(migration));
+      await tx.execute(
+        sql`INSERT INTO migrations(version,checksum) VALUES(1,${checksum})`,
+      );
+    });
+  }
+  async initializeOwner(id: string, hash: string) {
+    await this.db.execute(
+      sql`INSERT INTO users(id,password_hash) VALUES(${id},${hash}) ON CONFLICT DO NOTHING`,
+    );
+  }
+  async passwordHash(id: string) {
+    const r = await this.db.execute(
+      sql`SELECT password_hash FROM users WHERE id=${id}`,
+    );
+    return r.rows[0]?.password_hash as string | undefined;
+  }
+  async putSession(hash: string, owner: string, csrf: string, expiry: Date) {
+    await this.db.execute(
+      sql`INSERT INTO sessions VALUES(${hash},${owner},${csrf},${expiry.toISOString()})`,
+    );
+  }
+  async session(hash: string): Promise<Session | undefined> {
+    const r = await this.db.execute(
+      sql`SELECT owner_id,csrf,expires_at::text FROM sessions WHERE token_hash=${hash} AND expires_at>now()`,
+    );
+    return r.rows[0] as unknown as Session | undefined;
+  }
+  async endSession(hash: string) {
+    await this.db.execute(sql`DELETE FROM sessions WHERE token_hash=${hash}`);
+  }
+  async putOAuthState(
+    hash: string,
+    owner: string,
+    session: string,
+    encrypted: string,
+  ) {
+    await this.db.execute(
+      sql`INSERT INTO oauth_states VALUES(${hash},${owner},${session},${encrypted},now()+interval '10 minutes')`,
+    );
+  }
+  async consumeOAuthState(hash: string, session: string) {
+    const r = await this.db.execute(
+      sql`DELETE FROM oauth_states WHERE state_hash=${hash} AND session_hash=${session} AND expires_at>now() RETURNING encrypted,owner_id`,
+    );
+    return r.rows[0] as { encrypted: string; owner_id: string } | undefined;
+  }
+  async connection(owner: string): Promise<Connection | undefined> {
+    const r = await this.db.execute(
+      sql`SELECT *,verified_at::text FROM oauth_connections WHERE owner_id=${owner}`,
+    );
+    return r.rows[0] as unknown as Connection | undefined;
+  }
+  async saveConnection(
+    owner: string,
+    channel: string,
+    scopes: string[],
+    encrypted: string,
+    expectedVersion?: number,
+  ) {
+    if (expectedVersion !== undefined) {
+      const r = await this.db.execute(
+        sql`UPDATE oauth_connections SET encrypted=${encrypted},scopes=${JSON.stringify(scopes)}::jsonb,version=version+1,verified_at=now(),status='connected' WHERE owner_id=${owner} AND version=${expectedVersion} RETURNING version`,
+      );
+      if (!r.rows.length)
+        throw new AppError("TOKEN_ROTATION_CONFLICT", 409, true);
+    } else
+      await this.db.execute(
+        sql`INSERT INTO oauth_connections(owner_id,channel_id,scopes,encrypted,status) VALUES(${owner},${channel},${JSON.stringify(scopes)}::jsonb,${encrypted},'connected') ON CONFLICT(owner_id) DO UPDATE SET channel_id=excluded.channel_id,scopes=excluded.scopes,encrypted=excluded.encrypted,status='connected',version=oauth_connections.version+1,verified_at=now()`,
+      );
+  }
+  async disconnect(owner: string) {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`DELETE FROM oauth_connections WHERE owner_id=${owner}`,
+      );
+      await tx.execute(
+        sql`DELETE FROM observations WHERE owner_id=${owner} AND kind LIKE 'owned_%'`,
+      );
+      await tx.execute(
+        sql`DELETE FROM entities WHERE owner_id=${owner} AND kind IN ('report','report_job','owner_channel')`,
+      );
+      await tx.execute(sql`DELETE FROM oauth_states WHERE owner_id=${owner}`);
+      await tx.execute(
+        sql`INSERT INTO audit_log(owner_id,operation) VALUES(${owner},'google_disconnected')`,
+      );
+    });
+  }
+  async putEntity(
+    owner: string,
+    kind: string,
+    id: string,
+    body: Record<string, Json>,
+    meta: Meta,
+    expires: Date | null = null,
+    expectedVersion?: number,
+  ): Promise<Entity> {
+    const result =
+      expectedVersion !== undefined
+        ? await this.db.execute(
+            sql`UPDATE entities SET body=${JSON.stringify(body)}::jsonb,meta=${JSON.stringify(meta)}::jsonb,version=version+1,expires_at=${expires?.toISOString() ?? null},updated_at=now() WHERE owner_id=${owner} AND kind=${kind} AND id=${id} AND version=${expectedVersion} RETURNING *,updated_at::text,expires_at::text`,
+          )
+        : await this.db.execute(
+            sql`INSERT INTO entities(owner_id,kind,id,body,meta,expires_at) VALUES(${owner},${kind},${id},${JSON.stringify(body)}::jsonb,${JSON.stringify(meta)}::jsonb,${expires?.toISOString() ?? null}) ON CONFLICT(owner_id,kind,id) DO UPDATE SET body=excluded.body,meta=excluded.meta,expires_at=excluded.expires_at,version=entities.version+1,updated_at=now() RETURNING *,updated_at::text,expires_at::text`,
+          );
+    if (!result.rows.length) throw new AppError("REVISION_CONFLICT", 409);
+    return result.rows[0] as unknown as Entity;
+  }
+  async entity(
+    owner: string,
+    kind: string,
+    id: string,
+  ): Promise<Entity | undefined> {
+    const r = await this.db.execute(
+      sql`SELECT *,updated_at::text,expires_at::text FROM entities WHERE owner_id=${owner} AND kind=${kind} AND id=${id} AND (expires_at IS NULL OR expires_at>now())`,
+    );
+    return r.rows[0] as unknown as Entity | undefined;
+  }
+  async entities(owner: string, kind: string, limit = 200): Promise<Entity[]> {
+    const r = await this.db.execute(
+      sql`SELECT *,updated_at::text,expires_at::text FROM entities WHERE owner_id=${owner} AND kind=${kind} AND (expires_at IS NULL OR expires_at>now()) ORDER BY entities.updated_at DESC,id LIMIT ${Math.min(limit, 1000)}`,
+    );
+    return r.rows as unknown as Entity[];
+  }
+  async consumeGrant(owner: string, id: string) {
+    const r = await this.db.execute(
+      sql`DELETE FROM entities WHERE owner_id=${owner} AND kind='agent_grant' AND id=${id} AND expires_at>now() RETURNING body`,
+    );
+    return r.rows[0]?.body as Record<string, Json> | undefined;
+  }
+  async removeChannel(owner: string, id: string) {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`DELETE FROM entities WHERE owner_id=${owner} AND kind='watchlist' AND id=${id}`,
+      );
+      await tx.execute(
+        sql`DELETE FROM observations WHERE owner_id=${owner} AND (entity_id=${id} OR entity_id IN (SELECT id FROM entities WHERE owner_id=${owner} AND kind='video' AND body->>'channel_id'=${id}))`,
+      );
+      await tx.execute(
+        sql`DELETE FROM entities WHERE owner_id=${owner} AND ((kind='channel' AND id=${id}) OR (kind IN ('video','embedding','candidate') AND body->>'channel_id'=${id}))`,
+      );
+    });
+  }
+  async observe(
+    owner: string,
+    entity: string,
+    kind: string,
+    data: Record<string, Json>,
+    meta: Meta,
+    at: Date,
+    key: string,
+    expires: Date | null = null,
+  ) {
+    await this.db.execute(
+      sql`INSERT INTO observations(id,owner_id,entity_id,kind,data,meta,observed_at,dedupe_key,expires_at) VALUES(${randomUUID()},${owner},${entity},${kind},${JSON.stringify(data)}::jsonb,${JSON.stringify(meta)}::jsonb,${at.toISOString()},${key},${expires?.toISOString() ?? null}) ON CONFLICT(owner_id,kind,dedupe_key) DO UPDATE SET data=excluded.data,meta=excluded.meta,observed_at=excluded.observed_at,expires_at=excluded.expires_at WHERE observations.observed_at<=excluded.observed_at`,
+    );
+  }
+  async observations(
+    owner: string,
+    entity: string,
+    kind: string,
+  ): Promise<Observation[]> {
+    const r = await this.db.execute(
+      sql`SELECT *,observed_at::text,expires_at::text FROM observations WHERE owner_id=${owner} AND entity_id=${entity} AND kind=${kind} AND (expires_at IS NULL OR expires_at>now()) ORDER BY observations.observed_at DESC LIMIT 1000`,
+    );
+    return r.rows as unknown as Observation[];
+  }
+  async reserveQuota(
+    project: string,
+    day: string,
+    bucket: string,
+    method: string,
+    limit: number,
+  ) {
+    await this.db.transaction(async (tx) => {
+      const r = await tx.execute(
+        sql`INSERT INTO quota_ledger VALUES(${project},${day},${bucket},1) ON CONFLICT(project,day_pt,bucket) DO UPDATE SET units=quota_ledger.units+1 WHERE quota_ledger.units<${limit} RETURNING units`,
+      );
+      if (!r.rows.length)
+        throw new AppError("QUOTA_BUDGET_EXHAUSTED", 429, false);
+      await tx.execute(
+        sql`INSERT INTO quota_calls(project,day_pt,bucket,method) VALUES(${project},${day},${bucket},${method})`,
+      );
+    });
+  }
+  async quota(project: string, day: string) {
+    const r = await this.db.execute(
+      sql`SELECT bucket,units FROM quota_ledger WHERE project=${project} AND day_pt=${day}`,
+    );
+    return r.rows as { bucket: string; units: number }[];
+  }
+  async purge(now = new Date()) {
+    await this.db.transaction(async (tx) => {
+      const at = now.toISOString();
+      await tx.execute(sql`DELETE FROM entities WHERE expires_at<=${at}`);
+      await tx.execute(sql`DELETE FROM observations WHERE expires_at<=${at}`);
+      await tx.execute(sql`DELETE FROM sessions WHERE expires_at<=${at}`);
+      await tx.execute(sql`DELETE FROM oauth_states WHERE expires_at<=${at}`);
+      await tx.execute(
+        sql`DELETE FROM action_approvals WHERE expires_at<=${at}`,
+      );
+      await tx.execute(
+        sql`UPDATE deliveries SET state='approval_expired',payload='{}'::jsonb WHERE expires_at<=${at} AND state IN ('queued','retry')`,
+      );
+    });
+  }
+  async exportData(owner: string) {
+    const entities = await this.db.execute(
+      sql`SELECT kind,id,body,version,meta,expires_at::text,updated_at::text FROM entities WHERE owner_id=${owner} AND kind<>'agent_grant' AND (expires_at IS NULL OR expires_at>now())`,
+    );
+    const observations = await this.db.execute(
+      sql`SELECT entity_id,kind,data,meta,observed_at::text,expires_at::text,dedupe_key FROM observations WHERE owner_id=${owner} AND (expires_at IS NULL OR expires_at>now())`,
+    );
+    return { entities: entities.rows, observations: observations.rows };
+  }
+  async deleteData(owner: string) {
+    await this.db.transaction(async (tx) => {
+      for (const table of [
+        "entities",
+        "observations",
+        "oauth_connections",
+        "oauth_states",
+        "deliveries",
+        "action_approvals",
+        "audit_log",
+        "sessions",
+      ])
+        await tx.execute(
+          sql`DELETE FROM ${sql.identifier(table)} WHERE owner_id=${owner}`,
+        );
+    });
+  }
+  async approveAction(
+    tokenHash: string,
+    owner: string,
+    sessionHash: string,
+    blueprint: Entity,
+    payloadHash: string,
+    target: string,
+  ) {
+    await this.db.execute(
+      sql`INSERT INTO action_approvals VALUES(${tokenHash},${owner},${sessionHash},${blueprint.id},${blueprint.version},${payloadHash},${target},now()+interval '15 minutes',false)`,
+    );
+  }
+  async enqueueDelivery(
+    owner: string,
+    approvalHash: string,
+    id: string,
+    blueprint: Entity,
+    payload: Record<string, Json>,
+    hash: string,
+    target: string,
+  ): Promise<Delivery> {
+    return this.db.transaction(async (tx) => {
+      const prior = await tx.execute(
+        sql`SELECT target FROM deliveries WHERE id=${id}`,
+      );
+      if (prior.rows[0] && prior.rows[0].target !== target)
+        throw new AppError("TARGET_CHANGE_REQUIRES_NEW_REVISION", 409);
+      const approval = await tx.execute(
+        sql`UPDATE action_approvals a SET consumed=true WHERE token_hash=${approvalHash} AND a.owner_id=${owner} AND blueprint_id=${blueprint.id} AND revision=${blueprint.version} AND payload_hash=${hash} AND target=${target} AND expires_at>now() AND EXISTS(SELECT 1 FROM sessions s WHERE s.token_hash=a.session_hash AND s.expires_at>now()) RETURNING *`,
+      );
+      if (!approval.rows.length)
+        throw new AppError("DIRECT_OWNER_APPROVAL_REQUIRED", 403);
+      const current = await tx.execute(
+        sql`SELECT version FROM entities WHERE owner_id=${owner} AND kind='blueprint' AND id=${blueprint.id} FOR UPDATE`,
+      );
+      if (current.rows[0]?.version !== blueprint.version)
+        throw new AppError("REVISION_CONFLICT", 409);
+      const r = await tx.execute(
+        sql`INSERT INTO deliveries(id,owner_id,blueprint_id,revision,payload,payload_hash,target,state,expires_at) VALUES(${id},${owner},${blueprint.id},${blueprint.version},${JSON.stringify(payload)}::jsonb,${hash},${target},'queued',${String(approval.rows[0]?.expires_at)}) ON CONFLICT(id) DO UPDATE SET expires_at=CASE WHEN deliveries.state='delivered' THEN deliveries.expires_at ELSE excluded.expires_at END,payload=CASE WHEN deliveries.state='delivered' THEN deliveries.payload ELSE excluded.payload END,state=CASE WHEN deliveries.state='delivered' THEN 'delivered' ELSE 'queued' END,updated_at=now() WHERE deliveries.payload_hash=excluded.payload_hash AND deliveries.target=excluded.target RETURNING *,expires_at::text`,
+      );
+      await tx.execute(
+        sql`INSERT INTO audit_log(owner_id,operation,entity_id) VALUES(${owner},'blueprint_send_confirmed',${blueprint.id})`,
+      );
+      if (!r.rows.length) throw new AppError("IDEMPOTENCY_CONFLICT", 409);
+      return r.rows[0] as unknown as Delivery;
+    });
+  }
+  async deliveries(owner: string): Promise<Delivery[]> {
+    const r = await this.db.execute(
+      sql`SELECT *,expires_at::text FROM deliveries WHERE owner_id=${owner} ORDER BY updated_at DESC LIMIT 100`,
+    );
+    return r.rows as unknown as Delivery[];
+  }
+  async deliveryStatus(
+    id: string,
+    state: string,
+    response: Record<string, Json> | null,
+  ) {
+    await this.db.execute(
+      sql`UPDATE deliveries SET state=${state},response=${JSON.stringify(response)}::jsonb,attempts=attempts+1,updated_at=now() WHERE id=${id}`,
+    );
+  }
+}

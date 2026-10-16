@@ -1,0 +1,6 @@
+{
+  "name": "@ci/mcp",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

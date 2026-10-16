@@ -1,0 +1,6 @@
+{
+  "name": "@ci/ui",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}

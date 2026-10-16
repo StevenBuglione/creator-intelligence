@@ -1,0 +1,7 @@
+* text=auto
+*.md text eol=lf
+*.py text eol=lf
+*.json text eol=lf
+# Preserve the supplied archive's exact bytes for the provenance manifest.
+handoff/** -text
+handoff/FEATURE_MATRIX.csv whitespace=cr-at-eol

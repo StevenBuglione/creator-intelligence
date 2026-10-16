@@ -1,0 +1,6 @@
+{
+  "name": "@ci/db",
+  "private": true,
+  "type": "module",
+  "license": "MIT"
+}
