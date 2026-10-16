@@ -1,6 +1,6 @@
 # Third-party notices
 
-`apps/web/public/youtube-developed-light.png` is the unmodified official "Developed with YouTube" attribution asset from https://developers.google.com/static/youtube/images/developed-with-youtube-sentence-case-light.png . YouTube owns this mark; it is not licensed under this project's MIT license. Its use is governed by https://developers.google.com/youtube/terms/branding-guidelines . It links to YouTube and is displayed separately from this project's identity.
+`apps/web/public/youtube-developed-light.png` (also served as `docs/youtube-developed-light.png`) is the unmodified official "Developed with YouTube" attribution asset from https://developers.google.com/static/youtube/images/developed-with-youtube-sentence-case-light.png . YouTube owns this mark; it is not licensed under this project's MIT license. Its use is governed by https://developers.google.com/youtube/terms/branding-guidelines . It links to YouTube and is displayed separately from this project's identity.
 
 Creator Intelligence code and project documentation are MIT-licensed by Steven Patrick Buglione.
 Third-party packages, images, services and content retain their own licenses and terms.
@@ -11,7 +11,7 @@ The Docker stack references Node.js, PostgreSQL/pgvector and Redis 7.4 images. I
 Redis 7.4 uses RSALv2 or SSPLv1, not this project's MIT license. See the
 [Redis 7.4 license](https://github.com/redis/redis/blob/7.4/LICENSE.txt).
 This release does not claim every dependency uses an OSI-approved license.
-Google/YouTube APIs and any configured AI or production provider have separate terms.
+Google/YouTube APIs and any configured AI provider have separate terms.
 
 Direct JavaScript dependency license metadata is listed below. For transitive dependencies
 use `pnpm licenses list` after installation and inspect each package's included notices.

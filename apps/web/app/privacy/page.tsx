@@ -34,7 +34,7 @@ export default function Privacy() {
       <p>
         Settings provides export, disconnect, and deletion. Disconnect removes
         this app’s owner reports. Delete removes its drafts and cached records
-        as well. Local disconnect does not revoke the shared Google project:
+        as well. Local disconnect does not revoke the Google project grant:
         Google account revocation also invalidates other clients that share the
         same Google project. Only take that account-level action when you intend
         to disconnect all of them. Delete also removes this app’s managed daily
@@ -63,8 +63,8 @@ export default function Privacy() {
           Google Account permissions
         </a>
         . Both affect other clients if they share the same Google project.
-        Removing only this app’s local connection does not withdraw the shared
-        Google grant.
+        Removing only this app’s local connection does not withdraw the Google
+        grant.
       </p>
       <p>
         This application uses YouTube API Services. Use is subject to the{" "}

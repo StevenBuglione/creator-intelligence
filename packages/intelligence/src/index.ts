@@ -161,7 +161,8 @@ export class Application {
               this.config.GOOGLE_PROJECT_NUMBER,
               quotaDay(),
             ),
-            coverage: "This app only; project quota is shared.",
+            coverage:
+              "Requests tracked by this app; consult Google Cloud for project-wide usage.",
           },
         },
         "system",
@@ -553,7 +554,7 @@ export class Application {
           actor.role !== "owner" ||
           !actor.sessionHash ||
           !(await this.store.session(actor.sessionHash)) ||
-          data.confirmation !== "REVOKE GOOGLE PROJECT INCLUDING PUBLISHING"
+          data.confirmation !== "REVOKE GOOGLE PROJECT ACCESS"
         )
           throw new AppError(
             "PROJECT_WIDE_REVOCATION_CONFIRMATION_REQUIRED",
@@ -564,7 +565,7 @@ export class Application {
           {
             revoked: true,
             scope: "all_google_clients_in_this_project",
-            publishing: "reauthorization_required",
+            project_authorization: "reauthorization_required",
           },
           "system",
         );
@@ -575,7 +576,7 @@ export class Application {
         return envelope(
           {
             deleted: true,
-            google_revocation: "not_requested_to_preserve_existing_publishing",
+            google_revocation: "not_requested",
           },
           "system",
         );

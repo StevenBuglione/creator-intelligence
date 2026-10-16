@@ -723,8 +723,8 @@ export class YouTube {
     };
   }
   async disconnect(owner: string) {
-    // Google revocation invalidates ALL clients in this shared project, including
-    // the established publisher. Local disconnect intentionally never calls it.
+    // Google revocation can invalidate other clients in the same project.
+    // Local disconnect intentionally never calls the revocation endpoint.
     await this.store.disconnect(owner);
   }
   async revokeProject(owner: string) {

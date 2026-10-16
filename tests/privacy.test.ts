@@ -63,12 +63,12 @@ describe("privacy and bounded model assistance", () => {
       ).rejects.toThrow("PROJECT_WIDE_REVOCATION_CONFIRMATION_REQUIRED");
       await expect(
         app.call({ ...actor, role: "agent" }, "revoke_google_project", {
-          confirmation: "REVOKE GOOGLE PROJECT INCLUDING PUBLISHING",
+          confirmation: "REVOKE GOOGLE PROJECT ACCESS",
         }),
       ).rejects.toThrow("DIRECT_OWNER_APPROVAL_REQUIRED");
       expect(calls).toBe(0);
       await app.call(actor, "revoke_google_project", {
-        confirmation: "REVOKE GOOGLE PROJECT INCLUDING PUBLISHING",
+        confirmation: "REVOKE GOOGLE PROJECT ACCESS",
       });
       expect(calls).toBe(1);
       expect(await store.connection(config.OWNER_ID)).toBeUndefined();

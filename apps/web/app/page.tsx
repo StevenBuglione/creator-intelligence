@@ -1119,9 +1119,7 @@ export default function Home() {
                 <p>Dedicated Google OAuth client configuration is pending.</p>
               )}
               <details>
-                <summary>
-                  Revoke Google access for the entire shared project
-                </summary>
+                <summary>Revoke Google access for this project</summary>
                 <p>
                   Revocation can disconnect other clients using this Google
                   project, including a publisher. Local removal above only
@@ -1131,22 +1129,19 @@ export default function Home() {
                   disabled={busy || !google?.connected}
                   onClick={() => {
                     const confirmation = window.prompt(
-                      "This revokes the Google project grant and can affect other clients, including publishing. To proceed, type REVOKE GOOGLE PROJECT INCLUDING PUBLISHING",
+                      "This revokes this Google project's grant and can affect any other clients in the same project. To proceed, type REVOKE GOOGLE PROJECT ACCESS",
                     );
-                    if (
-                      confirmation ===
-                      "REVOKE GOOGLE PROJECT INCLUDING PUBLISHING"
-                    )
+                    if (confirmation === "REVOKE GOOGLE PROJECT ACCESS")
                       void run(async () => {
                         await call("revoke_google_project", { confirmation });
                         await refresh();
                         setMessage(
-                          "Google project access revoked. Existing publishing now requires reauthorization.",
+                          "Google project access revoked. Clients using this project grant require reauthorization.",
                         );
                       });
                   }}
                 >
-                  Revoke entire project, including publishing
+                  Revoke project access
                 </button>
                 <p>
                   <a
