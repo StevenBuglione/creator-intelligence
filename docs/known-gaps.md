@@ -17,8 +17,8 @@ The 151-row coverage ledger preserves planned, implemented, tested, demo and liv
 - Original script editing/versioning is implemented. Dedicated automatic script writing,
   broad search/discovery, many optimization tools, browser extensions and multi-user access
   remain outside this release. Optional model output quality needs a real model and human review.
-- The application has a local privacy page but still needs a versioned affirmative policy
-  acceptance gate before full audit readiness. Public site publication does not resolve that.
+- Versioned privacy/terms acceptance and separate optional MCP sharing are enforced by the
+  API. The deployment owner must accept them personally; tests do not supply that consent.
 - Windows setup and Linux containers are covered; macOS/Linux host setup scripts are not
   supplied. Publishing, rendering and media generation remain separate tools.
 - Source distribution does not make the maintainer's private deployment publicly accessible.

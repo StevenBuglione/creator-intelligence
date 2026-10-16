@@ -66,6 +66,13 @@ CREATE TABLE IF NOT EXISTS deliveries(id text PRIMARY KEY,owner_id uuid NOT NULL
 CREATE TABLE IF NOT EXISTS action_approvals(token_hash text PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,session_hash text NOT NULL REFERENCES sessions(token_hash) ON DELETE CASCADE,blueprint_id text NOT NULL,revision int NOT NULL,payload_hash text NOT NULL,target text NOT NULL,expires_at timestamptz NOT NULL,consumed boolean NOT NULL DEFAULT false);
 CREATE TABLE IF NOT EXISTS audit_log(id bigserial PRIMARY KEY,owner_id uuid REFERENCES users(id) ON DELETE CASCADE,operation text NOT NULL,entity_id text,at timestamptz NOT NULL DEFAULT now());
 `;
+const consentMigration = `
+CREATE TABLE policy_consents(owner_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,version text NOT NULL,accepted_at timestamptz NOT NULL DEFAULT now(),agent_data_allowed boolean NOT NULL DEFAULT false);
+`;
+const ownerExpiryMigration = `
+UPDATE observations SET expires_at=observed_at+interval '30 days' WHERE kind LIKE 'owned_%' AND expires_at IS NULL;
+UPDATE entities SET expires_at=updated_at+interval '30 days' WHERE kind IN ('report','report_job','owner_channel') AND expires_at IS NULL;
+`;
 export class Store {
   readonly pool: Pool;
   readonly db: ReturnType<typeof drizzle>;
@@ -100,19 +107,25 @@ export class Store {
       await tx.execute(
         sql`CREATE TABLE IF NOT EXISTS migrations(version int PRIMARY KEY,checksum text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())`,
       );
-      const checksum = createHash("sha256").update(migration).digest("hex");
-      const old = await tx.execute(
-        sql`SELECT checksum FROM migrations WHERE version=1`,
-      );
-      if (old.rows.length) {
-        if (old.rows[0]?.checksum !== checksum)
-          throw new Error("Migration checksum mismatch");
-        return;
+      for (const [version, source] of [
+        [1, migration],
+        [2, consentMigration],
+        [3, ownerExpiryMigration],
+      ] as const) {
+        const checksum = createHash("sha256").update(source).digest("hex");
+        const old = await tx.execute(
+          sql`SELECT checksum FROM migrations WHERE version=${version}`,
+        );
+        if (old.rows.length) {
+          if (old.rows[0]?.checksum !== checksum)
+            throw new Error("Migration checksum mismatch");
+          continue;
+        }
+        await tx.execute(sql.raw(source));
+        await tx.execute(
+          sql`INSERT INTO migrations(version,checksum) VALUES(${version},${checksum})`,
+        );
       }
-      await tx.execute(sql.raw(migration));
-      await tx.execute(
-        sql`INSERT INTO migrations(version,checksum) VALUES(1,${checksum})`,
-      );
     });
   }
   async initializeOwner(id: string, hash: string) {
@@ -125,6 +138,38 @@ export class Store {
       sql`SELECT password_hash FROM users WHERE id=${id}`,
     );
     return r.rows[0]?.password_hash as string | undefined;
+  }
+  async policyConsent(owner: string) {
+    const result = await this.db.execute(
+      sql`SELECT version,accepted_at::text,agent_data_allowed FROM policy_consents WHERE owner_id=${owner}`,
+    );
+    return result.rows[0] as
+      | { version: string; accepted_at: string; agent_data_allowed: boolean }
+      | undefined;
+  }
+  async acceptPolicy(
+    owner: string,
+    version: string,
+    agentDataAllowed: boolean,
+  ) {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`INSERT INTO policy_consents(owner_id,version,agent_data_allowed) VALUES(${owner},${version},${agentDataAllowed}) ON CONFLICT(owner_id) DO UPDATE SET version=excluded.version,accepted_at=now(),agent_data_allowed=excluded.agent_data_allowed`,
+      );
+      await tx.execute(
+        sql`INSERT INTO audit_log(owner_id,operation,entity_id) VALUES(${owner},'policy_accepted',${version})`,
+      );
+    });
+  }
+  async setAgentDataAllowed(owner: string, version: string, allowed: boolean) {
+    const result = await this.db.execute(
+      sql`UPDATE policy_consents SET agent_data_allowed=${allowed} WHERE owner_id=${owner} AND version=${version} RETURNING owner_id`,
+    );
+    if (!result.rows.length)
+      throw new AppError("POLICY_ACCEPTANCE_REQUIRED", 403);
+    await this.db.execute(
+      sql`INSERT INTO audit_log(owner_id,operation) VALUES(${owner},${allowed ? "agent_sharing_enabled" : "agent_sharing_disabled"})`,
+    );
   }
   async putSession(hash: string, owner: string, csrf: string, expiry: Date) {
     await this.db.execute(
@@ -335,6 +380,7 @@ export class Store {
         "action_approvals",
         "audit_log",
         "sessions",
+        "policy_consents",
       ])
         await tx.execute(
           sql`DELETE FROM ${sql.identifier(table)} WHERE owner_id=${owner}`,

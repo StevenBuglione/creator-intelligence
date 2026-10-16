@@ -631,8 +631,8 @@
     "availability": "D",
     "actual_status": "tested",
     "implementation_link": "apps/api/src/server.ts",
-    "test_name": "tests/policy.test.ts; tests/providers.test.ts; tests/negative.test.ts",
-    "unavailable_reason": "Dedicated web client created; JSON download and human consent are pending. Existing MCP authorization is separate evidence.",
+    "test_name": "tests/policy.test.ts; tests/providers.test.ts; tests/negative.test.ts; tests/consent.test.ts",
+    "unavailable_reason": "Dedicated OAuth client configuration prepared; new-app human consent and live owner verification remain pending. Versioned policy acceptance and optional MCP sharing are tested; no consent is inferred.",
     "compliance_gate": null
   },
   {

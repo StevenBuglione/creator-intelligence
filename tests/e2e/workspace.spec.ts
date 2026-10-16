@@ -6,7 +6,28 @@ test("owner can review fixture metrics and approve one versioned production blue
   await page.goto("/");
   await page.getByLabel("Owner password").fill(process.env.OWNER_PASSWORD!);
   await page.getByRole("button", { name: "Open workspace" }).click();
-  await expect(page.getByText("SYNTHETIC DEMONSTRATION")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Before you use|Overview/ }),
+  ).toBeVisible();
+  const accept = page.getByRole("button", {
+    name: "Accept policies & open workspace",
+  });
+  if (await accept.isVisible()) {
+    await expect(accept).toBeDisabled();
+    await page
+      .getByLabel("I agree to the privacy policy.", { exact: true })
+      .check();
+    await page
+      .getByLabel(
+        "I agree to the terms of use, including the YouTube Terms of Service.",
+        { exact: true },
+      )
+      .check();
+    await accept.click();
+  }
+  await expect(
+    page.getByText("SYNTHETIC DEMONSTRATION", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "1200", exact: true }),
   ).toBeVisible();

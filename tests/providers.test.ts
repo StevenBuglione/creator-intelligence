@@ -232,6 +232,19 @@ describe("official provider ingestion", () => {
           )
         )[0]?.data,
       ).toMatchObject({ impressions: 1000, ctr: 0.042 });
+      const saved = (
+        await store.observations(config.OWNER_ID, "aaaaaaaaaaa", "owned_reach")
+      )[0]!;
+      expect(Date.parse(saved.expires_at!)).toBeGreaterThan(
+        Date.now() + 29 * 86400_000,
+      );
+      await store.purge(new Date(Date.now() + 31 * 86400_000));
+      expect(
+        await store.observations(config.OWNER_ID, "aaaaaaaaaaa", "owned_reach"),
+      ).toEqual([]);
+      expect(
+        await store.entity(config.OWNER_ID, "report", "report1"),
+      ).toBeUndefined();
     } finally {
       await cleanup();
     }

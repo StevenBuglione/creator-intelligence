@@ -35,3 +35,27 @@ public-adapter reads, not a new operator's authorization. No new owner OAuth, ma
 registration or production ContentOS delivery is claimed. Public release and YouTube approval
 are distinct. The ledger retains 128 not_started, two live_verified, one implemented, six tested,
 13 demo_verified and one in_progress entries; all 28 G-class features remain disabled.
+
+
+## Audit-readiness revision, 2026-10-16
+
+The current revision passed ESLint, strict TypeScript, 48 Vitest tests across nine files,
+a Windows production build and both desktop/mobile Playwright workflows. The Linux Docker
+image built successfully. An isolated six-service Compose deployment passed UI/API health,
+HTTP 401 without authentication, and HTTP/stdio MCP initialization with 18 tools each.
+Both transports returned stored status and rejected governed metrics after explicit fixture
+consent. Before fixture consent, MCP status returned POLICY_ACCEPTANCE_REQUIRED.
+The isolated worker registered all four schedules; its daily backup had not yet completed
+at this check. Earlier backup evidence is historical and is not a new completion claim.
+
+New checks cover versioned privacy/terms agreement, CSRF and owner-only acceptance,
+optional MCP sharing disabled by default, immediate sharing revocation, policy renewal,
+no automatically accepted policies, and owner-report expiry/purge. MCP reads do not call
+Google transport or token refresh, and collection operations are rejected for agents.
+The local deployment was backed up and upgraded through migrations 1, 2 and 3; existing
+migration checksums are preserved. A running deployment still requires its owner's actual
+agreement and Google consent. Tests do not substitute for either.
+
+New-app Google owner authorization, actual managed-Claude use, and a real ContentOS receipt
+remain separate live acceptance gates. The feature ledger retains the previous statuses;
+these security and retention checks do not imply completion of the 151-feature backlog.

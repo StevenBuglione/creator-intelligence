@@ -16,6 +16,7 @@ import type { Config } from "../../config/src/index.js";
 import type { Store, Entity } from "../../db/src/index.js";
 import { YouTube } from "../../youtube/src/index.js";
 import { quotaDay, quotaReset } from "../../youtube/src/quota.js";
+import { POLICY_VERSION } from "../../domain/src/policy.js";
 import { ContentOS, payloadFor } from "../../contentos/src/index.js";
 import { suggestAngles } from "../../ai/src/index.js";
 import {
@@ -108,6 +109,19 @@ export class Application {
       ].includes(operation)
     )
       throw new AppError("WORKER_OPERATION_FORBIDDEN", 403);
+    const consent = await this.store.policyConsent(owner);
+    // Cleanup remains available after a policy revision. Collection, drafts and
+    // delivery (including scheduled work) require the current owner's agreement.
+    if (
+      !["purge", "disconnect", "revoke_google_project", "delete_data"].includes(
+        operation,
+      )
+    ) {
+      if (consent?.version !== POLICY_VERSION)
+        throw new AppError("POLICY_ACCEPTANCE_REQUIRED", 403);
+      if (actor.role === "agent" && !consent.agent_data_allowed)
+        throw new AppError("AGENT_DATA_SHARING_NOT_AUTHORIZED", 403);
+    }
     if (
       this.config.APP_MODE === "live" &&
       ["analytics", "blueprint_performance", "export", "status"].includes(

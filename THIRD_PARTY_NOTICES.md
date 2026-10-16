@@ -1,5 +1,7 @@
 # Third-party notices
 
+`apps/web/public/youtube-developed-light.png` is the unmodified official "Developed with YouTube" attribution asset from https://developers.google.com/static/youtube/images/developed-with-youtube-sentence-case-light.png . YouTube owns this mark; it is not licensed under this project's MIT license. Its use is governed by https://developers.google.com/youtube/terms/branding-guidelines . It links to YouTube and is displayed separately from this project's identity.
+
 Creator Intelligence code and project documentation are MIT-licensed by Steven Patrick Buglione.
 Third-party packages, images, services and content retain their own licenses and terms.
 No dependency source or binary is vendored in this repository; the lockfile and Dockerfile

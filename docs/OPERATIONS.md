@@ -17,7 +17,9 @@ and the stdio launcher. Docker Compose runs six services.
    `yt-analytics.readonly`. Use the callback `http://localhost:4311/api/v1/auth/google/callback`.
 4. Save the downloaded client JSON as `%USERPROFILE%/.creator-intelligence/secrets/google-client.json`.
    Never put it in Git, a screenshot, a prompt or the public website.
-5. Follow the README quick start. Sign in locally, open Settings and connect your own channel.
+5. Follow the README quick start. Sign in locally and review the versioned privacy policy and
+   terms. MCP sharing is optional and disabled until explicitly selected. Then open Settings
+   and connect your own channel.
    The authorized channel ID must match `OWNED_CHANNEL_ID`; its display title may change.
    Missing/broad scopes, wrong channels, expired state and callback replay are rejected.
 6. Run `./scripts/with-local-env.ps1 pnpm test:integration:google` only when you want live
@@ -50,6 +52,11 @@ Use one authenticated MCP connection. The README has a Claude Code registration 
 other clients use the same stdio launcher or bearer-authenticated Streamable HTTP endpoint.
 Confirm an actual initialize/tools/list/status call; configuration alone does not prove access.
 Managed clients may require administrator allowlisting. Never bypass their policy.
+The current MCP reads stored observations and edits explicitly authorized drafts. It cannot
+initiate Google API collection, refresh Google tokens, or invoke Google MCP tools. The Google
+OAuth client belongs to the direct backend integration, not the downstream MCP client.
+Before adding an agent-driven Google OAuth workflow, review Google's [agent client isolation guidance](https://support.google.com/cloud/answer/15549257#agentic-client)
+and provision a separate designated agent client where required.
 Google credentials are not returned by MCP tools. Requested records do leave your device if
 your connected AI client sends them to a provider. Verify its data-handling settings.
 
@@ -74,7 +81,9 @@ only the disposable demo owner. Chrome is used on Windows; install Playwright Ch
 The default suite uses fake providers. Tests must never be pointed at someone else's data.
 
 The worker syncs every six hours, purges hourly, drains deliveries each minute and backs up
-original drafts daily. Backups exclude API caches, Google tokens and private analytics.
+original drafts daily. Collection, delivery and backups require current policy agreement.
+Owner report caches expire within 30 days unless refreshed, as well as being removed on
+disconnect. Backups exclude API caches, Google tokens and private analytics.
 Managed encrypted backups normally expire after seven days and are removed by Delete My Data.
 Manual exports remain the operator's responsibility. Restore requires the same owner/key and
 an empty workspace; `scripts/backup.ts restore` uses a separate restore database.

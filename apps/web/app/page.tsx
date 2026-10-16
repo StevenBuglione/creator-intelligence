@@ -1,5 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import { policyLinks } from "../../../packages/domain/src/policy";
+type PolicyState = {
+  version: string;
+  accepted: boolean;
+  accepted_at: string | null;
+  agent_data_allowed: boolean;
+};
 type Row = {
   id: string;
   version: number;
@@ -59,6 +66,10 @@ export default function Home() {
       '{"operation":"idea_save","input":{"body":{"title":"","angle":"","references":[]}}}',
     ),
     [agentGrant, setAgentGrant] = useState("");
+  const [policy, setPolicy] = useState<PolicyState | null>(null);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [allowAgent, setAllowAgent] = useState(false);
   async function request(path: string, body?: unknown, token = csrf) {
     const r = await fetch(API + "/api/v1/" + path, {
       method: body === undefined ? "GET" : "POST",
@@ -70,7 +81,27 @@ export default function Home() {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const data = await r.json();
-    if (!r.ok) throw new Error(data.error?.code ?? "Request failed");
+    if (!r.ok) {
+      if (data.error?.code === "POLICY_ACCEPTANCE_REQUIRED") {
+        // A server upgrade may introduce a new version while this tab is open.
+        // Load the current agreement instead of submitting the stale version.
+        const session = await fetch(API + "/api/v1/session", {
+          credentials: "include",
+        });
+        if (session.ok) {
+          const current = (await session.json()).data;
+          setPolicy(current.policy);
+          setCsrf(current.csrf);
+        } else {
+          setPolicy(null);
+          setCsrf("");
+        }
+        setPrivacyAccepted(false);
+        setTermsAccepted(false);
+        setAllowAgent(false);
+      }
+      throw new Error(data.error?.code ?? "Request failed");
+    }
     return data.data;
   }
   const call = (op: string, input: unknown = {}) =>
@@ -88,7 +119,7 @@ export default function Home() {
     }
   }
   async function refresh(token = csrf) {
-    if (!token) return;
+    if (!token || !policy?.accepted) return;
     const invoke = (op: string, input: unknown = {}) =>
       request("operations/" + op, input, token);
     setStatus(await invoke("status"));
@@ -114,14 +145,17 @@ export default function Home() {
   }
   useEffect(() => {
     request("session")
-      .then((d) => setCsrf(d.csrf))
+      .then((d) => {
+        setCsrf(d.csrf);
+        setPolicy(d.policy);
+      })
       .catch(() => {});
     if ("serviceWorker" in navigator)
       void navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
   useEffect(() => {
-    if (csrf) void run(() => refresh());
-  }, [csrf, page, kind]);
+    if (csrf && policy?.accepted) void run(() => refresh());
+  }, [csrf, page, kind, policy?.accepted]);
   async function saveBlueprint() {
     const row = await call("blueprint_save", {
       body: draft,
@@ -176,6 +210,7 @@ export default function Home() {
               const d = await request("login", { password });
               setPassword("");
               setCsrf(d.csrf);
+              setPolicy(d.policy);
             });
           }}
         >
@@ -197,6 +232,106 @@ export default function Home() {
         </p>
         {error && <p role="alert">{error}</p>}
         <a href="/privacy">Privacy & data controls</a>
+      </main>
+    );
+  if (!policy?.accepted)
+    return (
+      <main className="login">
+        <p className="eyebrow">YOUR PRIVACY AND CHOICES</p>
+        <h1>Before you use Creator Intelligence</h1>
+        <p>
+          This application uses YouTube API Services for public research and
+          reports from your authorized channel. Records and drafts are stored
+          locally. Google connection and sending a blueprint to production
+          require separate actions.
+        </p>
+        <p>
+          Policy version {policy?.version}. Read the{" "}
+          <a href="/privacy" target="_blank" rel="noreferrer">
+            privacy policy
+          </a>
+          ,{" "}
+          <a href="/terms" target="_blank" rel="noreferrer">
+            terms of use
+          </a>
+          ,{" "}
+          <a href={policyLinks.youtube} target="_blank" rel="noreferrer">
+            YouTube Terms of Service
+          </a>{" "}
+          and{" "}
+          <a href={policyLinks.google} target="_blank" rel="noreferrer">
+            Google Privacy Policy
+          </a>
+          .
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              const current = await request("policy/accept", {
+                version: policy?.version,
+                privacy_accepted: privacyAccepted,
+                terms_accepted: termsAccepted,
+                agent_data_allowed: allowAgent,
+              });
+              setPolicy(current);
+            });
+          }}
+        >
+          <label>
+            <input
+              type="checkbox"
+              required
+              checked={privacyAccepted}
+              onChange={(e) => setPrivacyAccepted(e.target.checked)}
+            />{" "}
+            I agree to the privacy policy.
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              required
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+            />{" "}
+            I agree to the terms of use, including the YouTube Terms of Service.
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={allowAgent}
+              onChange={(e) => setAllowAgent(e.target.checked)}
+            />{" "}
+            Optional: allow my connected MCP client to read requested workspace
+            data, including owner reports, and send it to its AI provider under
+            that account's settings.
+          </label>
+          <p className="muted">
+            Leave MCP sharing off to use the local interface only. Check your AI
+            provider's privacy settings before enabling it. You can turn sharing
+            off in Settings. Google credentials are never included in MCP
+            results.
+          </p>
+          <button disabled={busy || !privacyAccepted || !termsAccepted}>
+            Accept policies & open workspace
+          </button>
+        </form>
+        {error && <p role="alert">{error}</p>}
+        <button
+          onClick={() =>
+            void run(async () => {
+              await request("logout", {});
+              setCsrf("");
+            })
+          }
+        >
+          Sign out without accepting
+        </button>
+        <p>
+          <a href={policyLinks.privacy}>
+            Developer contact and data deletion information
+          </a>
+        </p>
       </main>
     );
   return (
@@ -234,6 +369,10 @@ export default function Home() {
         <p className="muted">
           Research → idea → blueprint → your production pipeline
         </p>
+        <p>
+          <a href="/privacy">Privacy & data controls</a> ·{" "}
+          <a href="/terms">Terms of use</a>
+        </p>
       </aside>
       <main>
         <header>
@@ -259,6 +398,27 @@ export default function Home() {
             ContentOS: {String(status.contentos_target ?? "disconnected")}
           </span>
         </div>
+        {["Overview", "My channel", "Research", "Channels"].includes(page) &&
+          status.mode !== "demo" && (
+            <div className="youtube-attribution">
+              <a
+                href="https://www.youtube.com/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img
+                  src="/youtube-developed-light.png"
+                  width="280"
+                  height="100"
+                  alt="Developed with YouTube"
+                />
+              </a>
+              <span>
+                Official YouTube API records. Creative drafts are independent
+                output.
+              </span>
+            </div>
+          )}
         {error && (
           <p className="alert" role="alert">
             {error.replaceAll("_", " ")}. No values were invented.
@@ -845,6 +1005,45 @@ export default function Home() {
         {page === "Settings" && (
           <>
             <section>
+              <h3>Privacy and MCP sharing</h3>
+              <p>
+                Policy {policy.version} accepted{" "}
+                {policy.accepted_at
+                  ? new Date(policy.accepted_at).toLocaleString()
+                  : ""}
+                . <a href="/privacy">Review privacy and data controls</a>.
+              </p>
+              <p>
+                MCP data sharing:{" "}
+                {policy.agent_data_allowed ? "enabled" : "disabled"}. Requested
+                records may reach the connected AI provider. Verify its account
+                settings before sharing.
+              </p>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    !policy.agent_data_allowed &&
+                    !window.confirm(
+                      "Allow the connected MCP client to read requested workspace records, including owner analytics, under its provider's privacy settings?",
+                    )
+                  )
+                    return;
+                  void run(async () =>
+                    setPolicy(
+                      await request("policy/agent-data", {
+                        allowed: !policy.agent_data_allowed,
+                      }),
+                    ),
+                  );
+                }}
+              >
+                {policy.agent_data_allowed
+                  ? "Disable MCP data sharing"
+                  : "Enable MCP data sharing"}
+              </button>
+            </section>
+            <section>
               <h3>Authorize one Claude draft</h3>
               <p>
                 Review the exact idea or blueprint JSON from Claude. This
@@ -956,7 +1155,8 @@ export default function Home() {
                       "This revokes the Google project grant and can affect other clients, including publishing. To proceed, type REVOKE GOOGLE PROJECT INCLUDING PUBLISHING",
                     );
                     if (
-                      confirmation === "REVOKE GOOGLE PROJECT INCLUDING PUBLISHING"
+                      confirmation ===
+                      "REVOKE GOOGLE PROJECT INCLUDING PUBLISHING"
                     )
                       void run(async () => {
                         await call("revoke_google_project", { confirmation });
@@ -1056,7 +1256,16 @@ export default function Home() {
 function Provenance({ meta }: { meta: Row["meta"] }) {
   return (
     <p className="provenance">
-      {meta.source} ·{" "}
+      {meta.source.startsWith("youtube_") ? (
+        <a href="https://www.youtube.com/" target="_blank" rel="noreferrer">
+          Source: YouTube
+        </a>
+      ) : meta.source === "synthetic" ? (
+        "Synthetic demonstration — not YouTube data"
+      ) : (
+        meta.source
+      )}{" "}
+      ·{" "}
       {meta.ownership?.replaceAll("_", " ") ??
         "source classification unavailable"}{" "}
       ·{" "}

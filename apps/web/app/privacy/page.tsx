@@ -1,12 +1,30 @@
+import { POLICY_VERSION } from "../../../../packages/domain/src/policy";
 export default function Privacy() {
   return (
     <main className="login">
       <h1>Your workspace, your data</h1>
       <p>
+        Policy version {POLICY_VERSION}. Maintained by Steven Patrick Buglione
+        as an individual.{" "}
+        <a href="https://github.com/StevenBuglione/creator-intelligence/issues">
+          Contact the developer
+        </a>{" "}
+        without posting credentials or private reports; request a private
+        contact channel for sensitive questions.
+      </p>
+      <p>
+        You must accept this policy and the <a href="/terms">terms of use</a>{" "}
+        before using features. Acceptance is stored with its version and
+        timestamp. MCP sharing is a separate, optional choice and can be
+        disabled in Settings; doing so blocks subsequent agent requests. Changes
+        to the policy version require renewed acceptance before collection, data
+        access or production delivery resumes.
+      </p>
+      <p>
         Creator Intelligence stores public YouTube records, authorized channel
         reports, and your original drafts locally in PostgreSQL. Public API
-        metadata and statistics expire after 30 days. There is no invented
-        earlier history.
+        metadata, statistics and stored owner reports expire after 30 days.
+        There is no invented earlier history.
       </p>
       <p>
         Google tokens are encrypted at rest. This app requests channel-read and
@@ -18,10 +36,10 @@ export default function Privacy() {
         Settings provides export, disconnect, and deletion. Disconnect removes
         this app’s owner reports. Delete removes its drafts and cached records
         as well. Local disconnect does not revoke the shared Google project:
-        Google account revocation also invalidates other clients that share
-        the same Google project. Only take that account-level action when you
-        intend to disconnect all of them. Delete also removes this app’s managed
-        daily draft backups. Any separately downloaded exports or manual backups
+        Google account revocation also invalidates other clients that share the
+        same Google project. Only take that account-level action when you intend
+        to disconnect all of them. Delete also removes this app’s managed daily
+        draft backups. Any separately downloaded exports or manual backups
         remain the operator’s responsibility; restoring them can restore drafts
         that were previously deleted. Provider caches and Google tokens are
         excluded from draft backups.
@@ -29,14 +47,15 @@ export default function Privacy() {
       <p>
         Google API data is used in accordance with the Google API Services User
         Data Policy, including Limited Use requirements. There is no
-        advertising, sale of data, built-in model-training workflow, or mandatory
-        hosted model provider. A connected AI client may process requested
-        records under its provider terms and account settings; verify those
-        settings before sharing private reports.
+        advertising, sale of data, built-in model-training workflow, or
+        mandatory hosted model provider. A connected AI client may process
+        requested records under its provider terms and account settings; verify
+        those settings before sharing private reports.
       </p>
       <p>
-        This is an open-source application intended for private local use. Public Google verification and
-        governed analytics approval have not been claimed.
+        This is an open-source application intended for private local use.
+        Public Google verification and governed analytics approval have not been
+        claimed.
       </p>
       <p>
         Google consent can be withdrawn using the separately confirmed
@@ -58,7 +77,11 @@ export default function Privacy() {
         approve production delivery, the reviewed blueprint is sent to the
         configured ContentOS receiver.
       </p>
-      <p><a href="https://stevenbuglione.github.io/creator-intelligence/privacy.html">Project privacy and self-hosting responsibilities</a></p>
+      <p>
+        <a href="https://stevenbuglione.github.io/creator-intelligence/privacy.html">
+          Project privacy and self-hosting responsibilities
+        </a>
+      </p>
       <a href="/">Return to workspace</a>
     </main>
   );

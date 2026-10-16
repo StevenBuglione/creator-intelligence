@@ -577,6 +577,7 @@ export class YouTube {
       meta,
       new Date(),
       `${video ?? "channel"}:${kind}:${from}:${to}`,
+      publicExpiry(),
     );
     return envelope({ from, to, columns, rows }, "youtube_analytics_api", meta);
   }
@@ -617,6 +618,7 @@ export class YouTube {
         job.id,
         { report_type: job.reportTypeId },
         envelope(null, "youtube_reporting_api").meta,
+        publicExpiry(),
       );
       let pageToken = "";
       do {
@@ -696,6 +698,7 @@ export class YouTube {
               meta,
               new Date(report.createTime),
               `${job.reportTypeId}:${digest(JSON.stringify(dimensions))}`,
+              publicExpiry(),
             );
           }
           await this.store.putEntity(
@@ -704,6 +707,7 @@ export class YouTube {
             report.id,
             { report_type: job.reportTypeId, rows: rows.length },
             envelope(null, "youtube_reporting_api").meta,
+            publicExpiry(),
           );
           ingested++;
         }

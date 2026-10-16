@@ -49,6 +49,34 @@ label {
   margin-bottom: 1rem;
   font-size: 0.9rem;
 }
+label:has(input[type="checkbox"]) {
+  display: block;
+  line-height: 1.6;
+}
+input[type="checkbox"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+.youtube-attribution {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.youtube-attribution a {
+  display: inline-flex;
+  background: #111;
+  border-radius: 4px;
+  max-width: 100%;
+}
+.youtube-attribution img {
+  width: 280px;
+  max-width: 100%;
+  height: auto;
+}
 input,
 textarea,
 select {

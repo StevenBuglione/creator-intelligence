@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import { getConfig } from "../packages/config/src/index.js";
 import { Store } from "../packages/db/src/index.js";
 import { hashPassword } from "../packages/security/src/index.js";
+import { POLICY_VERSION } from "../packages/domain/src/policy.js";
 export function testConfig() {
   const source = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
   if (!source)
@@ -29,7 +30,7 @@ export function testConfig() {
     YOUTUBE_DATA_API_KEY: "fixture-key",
   });
 }
-export async function testStore() {
+export async function testStore(options: { acceptPolicy?: boolean } = {}) {
   const config = testConfig(),
     admin = new Pool({
       connectionString:
@@ -38,7 +39,17 @@ export async function testStore() {
   try {
     await admin.query("CREATE DATABASE creator_intelligence_test");
   } catch (e) {
-    if ((e as { code?: string }).code !== "42P04") throw e;
+    const error = e as { code?: string; constraint?: string };
+    // Parallel test workers can race on the catalog's unique index during
+    // first-time database creation, rather than receive duplicate_database.
+    if (
+      error.code !== "42P04" &&
+      !(
+        error.code === "23505" &&
+        error.constraint === "pg_database_datname_index"
+      )
+    )
+      throw e;
   } finally {
     await admin.end();
   }
@@ -48,6 +59,8 @@ export async function testStore() {
     config.OWNER_ID,
     hashPassword(config.OWNER_PASSWORD!),
   );
+  if (options.acceptPolicy !== false)
+    await store.acceptPolicy(config.OWNER_ID, POLICY_VERSION, true);
   return {
     config,
     store,

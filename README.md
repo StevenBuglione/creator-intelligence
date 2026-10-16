@@ -41,7 +41,9 @@ pnpm install --frozen-lockfile
 ```
 
 Replace both identity placeholders with your values. Open http://localhost:4310,
-paste the generated owner password, and clear the clipboard after login. Local
+paste the generated owner password, and clear the clipboard after login. Review and accept
+the privacy policy and terms; enable optional MCP sharing only if you want a connected AI
+client to receive requested records. Local
 drafting works before Google is connected; API-backed data requires your credentials.
 Installations use their own credentials and quotas. Never use the maintainer's project.
 

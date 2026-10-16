@@ -6,6 +6,10 @@ import swagger from "@fastify/swagger";
 import { z, ZodError } from "zod";
 import { AppError, envelope } from "../../../packages/domain/src/index.js";
 import {
+  POLICY_VERSION,
+  policyLinks,
+} from "../../../packages/domain/src/policy.js";
+import {
   digest,
   equal,
   hashPassword,
@@ -47,6 +51,17 @@ export async function createServer(
     openapi: { info: { title: "Creator Intelligence", version: "0.1.0" } },
   });
   const actors = new WeakMap<object, Actor>();
+  async function policyState(owner: string) {
+    const consent = await store.policyConsent(owner);
+    return {
+      version: POLICY_VERSION,
+      links: policyLinks,
+      accepted: consent?.version === POLICY_VERSION,
+      accepted_at: consent?.accepted_at ?? null,
+      agent_data_allowed:
+        consent?.version === POLICY_VERSION && consent.agent_data_allowed,
+    };
+  }
   const secure = new URL(config.API_ORIGIN).protocol === "https:";
   const cookieOptions = {
     httpOnly: true,
@@ -161,14 +176,20 @@ export async function createServer(
         new Date(Date.now() + 8 * 3600_000),
       );
       reply.setCookie("ci_session", token, cookieOptions);
-      return envelope({ csrf }, "system");
+      return envelope(
+        { csrf, policy: await policyState(config.OWNER_ID) },
+        "system",
+      );
     },
   );
   app.get("/api/v1/session", async (request) => {
     const actor = actors.get(request)!;
     if (!actor.sessionHash) throw new AppError("OWNER_SESSION_REQUIRED", 403);
     return envelope(
-      { csrf: (await store.session(actor.sessionHash))!.csrf },
+      {
+        csrf: (await store.session(actor.sessionHash))!.csrf,
+        policy: await policyState(actor.owner),
+      },
       "system",
     );
   });
@@ -179,10 +200,43 @@ export async function createServer(
     reply.clearCookie("ci_session", cookieOptions);
     return { ok: true };
   });
+  app.post("/api/v1/policy/accept", async (request) => {
+    const actor = actors.get(request)!;
+    if (actor.role !== "owner" || !actor.sessionHash)
+      throw new AppError("OWNER_SESSION_REQUIRED", 403);
+    const input = z
+      .object({
+        version: z.literal(POLICY_VERSION),
+        privacy_accepted: z.literal(true),
+        terms_accepted: z.literal(true),
+        agent_data_allowed: z.boolean().default(false),
+      })
+      .strict()
+      .parse(request.body);
+    await store.acceptPolicy(
+      actor.owner,
+      input.version,
+      input.agent_data_allowed,
+    );
+    return envelope(await policyState(actor.owner), "system");
+  });
+  app.post("/api/v1/policy/agent-data", async (request) => {
+    const actor = actors.get(request)!;
+    if (actor.role !== "owner" || !actor.sessionHash)
+      throw new AppError("OWNER_SESSION_REQUIRED", 403);
+    const input = z
+      .object({ allowed: z.boolean() })
+      .strict()
+      .parse(request.body);
+    await store.setAgentDataAllowed(actor.owner, POLICY_VERSION, input.allowed);
+    return envelope(await policyState(actor.owner), "system");
+  });
   app.post("/api/v1/auth/google/start", async (request) => {
     const a = actors.get(request)!;
     if (a.role !== "owner" || !a.sessionHash)
       throw new AppError("OWNER_SESSION_REQUIRED", 403);
+    if (!(await policyState(a.owner)).accepted)
+      throw new AppError("POLICY_ACCEPTANCE_REQUIRED", 403);
     return envelope(
       { url: await application.youtube.startOAuth(a.owner, a.sessionHash) },
       "system",
@@ -191,6 +245,8 @@ export async function createServer(
   app.get("/api/v1/auth/google/callback", async (request, reply) => {
     const actor = actors.get(request)!;
     if (!actor.sessionHash) throw new AppError("OWNER_SESSION_REQUIRED", 403);
+    if (!(await policyState(actor.owner)).accepted)
+      throw new AppError("POLICY_ACCEPTANCE_REQUIRED", 403);
     const { state, code } = z
       .object({
         state: z.string().min(32).max(200),
