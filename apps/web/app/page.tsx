@@ -52,7 +52,6 @@ export default function Home() {
     [status, setStatus] = useState<Record<string, unknown>>({}),
     [items, setItems] = useState<Row[]>([]),
     [metrics, setMetrics] = useState<Observation[]>([]),
-    [deliveries, setDeliveries] = useState<Record<string, unknown>[]>([]),
     [identifier, setIdentifier] = useState(""),
     [title, setTitle] = useState(""),
     [angle, setAngle] = useState(""),
@@ -141,7 +140,6 @@ export default function Home() {
           ...(video ? { video_id: video } : {}),
         }),
       );
-    if (page === "Blueprints") setDeliveries(await invoke("deliveries"));
   }
   useEffect(() => {
     request("session")
@@ -165,30 +163,23 @@ export default function Home() {
     setMessage("Saved revision " + row.version);
     await refresh();
   }
-  async function approve(row: Row) {
-    if (
-      !window.confirm(
-        `Approve revision ${row.version} of “${row.body.working_title}” and send to ${status.contentos_target}?`,
-      )
-    )
-      return;
+  async function exportBlueprint(row: Row) {
     await run(async () => {
-      const approval = await call("approve", {
+      const result = await call("blueprint_export", {
         id: row.id,
         revision: row.version,
       });
-      const result = await call("send", {
-        id: row.id,
-        approval: approval.approval,
-      });
-      setMessage(
-        "Delivery: " +
-          result.state +
-          (result.response?.project_id
-            ? " · " + result.response.project_id
-            : ""),
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(result, null, 2)], {
+          type: "application/json",
+        }),
       );
-      await refresh();
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `creator-blueprint-${row.id}-v${row.version}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setMessage(`Exported revision ${row.version} as local JSON.`);
     });
   }
   const google = status.google as
@@ -200,8 +191,8 @@ export default function Home() {
         <p className="eyebrow">LOCAL WORKSPACE</p>
         <h1>Creator Intelligence</h1>
         <p>
-          Evidence for the next video. Original ideas. A clear handoff to
-          production.
+          Evidence for the next video. Original ideas. A clear plan for your
+          next video.
         </p>
         <form
           onSubmit={(e) => {
@@ -242,8 +233,7 @@ export default function Home() {
         <p>
           This application uses YouTube API Services for public research and
           reports from your authorized channel. Records and drafts are stored
-          locally. Google connection and sending a blueprint to production
-          require separate actions.
+          locally. Connecting Google requires your separate consent.
         </p>
         <p>
           Policy version {policy?.version}. Read the{" "}
@@ -366,9 +356,7 @@ export default function Home() {
             </button>
           ))}
         </nav>
-        <p className="muted">
-          Research → idea → blueprint → your production pipeline
-        </p>
+        <p className="muted">Research → idea → blueprint → local export</p>
         <p>
           <a href="/privacy">Privacy & data controls</a> ·{" "}
           <a href="/terms">Terms of use</a>
@@ -394,9 +382,7 @@ export default function Home() {
               ? "Owner channel connected"
               : "Owner channel disconnected"}
           </span>
-          <span>
-            ContentOS: {String(status.contentos_target ?? "disconnected")}
-          </span>
+          <span>Standalone research and planning</span>
         </div>
         {["Overview", "My channel", "Research", "Channels"].includes(page) &&
           status.mode !== "demo" && (
@@ -947,14 +933,17 @@ export default function Home() {
                   >
                     Edit
                   </button>
-                  <button disabled={busy} onClick={() => void approve(row)}>
-                    Approve & send
+                  <button
+                    disabled={busy}
+                    onClick={() => void exportBlueprint(row)}
+                  >
+                    Export blueprint JSON
                   </button>
                 </div>
               </section>
             ))}
             <section>
-              <h3>Delivery receipts</h3>
+              <h3>Published video link</h3>
               {editing && (
                 <div className="actions">
                   <label>
@@ -986,19 +975,9 @@ export default function Home() {
                 </div>
               )}
               <p>
-                A disconnected target stays queued. A local fixture receipt
-                never represents an external production project.
+                Link a video you published separately to inspect its
+                owner-authorized performance.
               </p>
-              <DataTable
-                rows={deliveries.map((d) => ({
-                  key: d.id,
-                  state: d.state,
-                  attempts: d.attempts,
-                  project:
-                    (d.response as { project_id?: string } | null)
-                      ?.project_id ?? "Not delivered",
-                }))}
-              />
             </section>
           </>
         )}
@@ -1047,8 +1026,8 @@ export default function Home() {
               <h3>Authorize one Claude draft</h3>
               <p>
                 Review the exact idea or blueprint JSON from Claude. This
-                authorizes one save for 15 minutes. Sending to production
-                requires the separate blueprint approval.
+                authorizes one save for 15 minutes. You can review and export
+                saved blueprints as local JSON files.
               </p>
               <label>
                 Draft request JSON

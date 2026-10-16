@@ -54,10 +54,17 @@ try {
         });
       if (status.isError || !gate.isError)
         throw new Error("MCP policy verification failed");
+      const names = tools.tools.map((tool) => tool.name);
+      if (
+        !names.includes("creator_blueprint_export") ||
+        names.includes("creator_deliveries")
+      )
+        throw new Error("MCP standalone export verification failed");
       report["mcp_" + kind] = {
         tools: tools.tools.length,
         read_succeeded: !status.isError,
         derived_metrics_blocked: gate.isError,
+        standalone_blueprint_export: true,
       };
     } finally {
       await client.close();
@@ -70,6 +77,11 @@ try {
     report.worker_schedulers = (await queue.getJobSchedulers()).map(
       (j) => j.name,
     );
+    if (
+      JSON.stringify([...(report.worker_schedulers as string[])].sort()) !==
+      JSON.stringify(["backup_and_integrity", "purge", "sync_all"])
+    )
+      throw new Error("Unexpected worker schedule");
     const completed = await queue.getJobs(["completed"], 0, 99);
     const backup = completed.find((j) => j.name === "backup_and_integrity");
     report.daily_backup = backup?.returnvalue?.data ?? "not_completed_yet";

@@ -1,5 +1,6 @@
+import { readFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
-test("owner can review fixture metrics and approve one versioned production blueprint", async ({
+test("owner can review fixture metrics and export one versioned blueprint", async ({
   page,
 }, testInfo) => {
   const suffix = testInfo.project.name + " " + Date.now();
@@ -84,15 +85,24 @@ test("owner can review fixture metrics and approve one versioned production blue
     .fill("Original lunchbox behind an office desk.");
   await page.getByRole("button", { name: "Save blueprint revision" }).click();
   await expect(page.getByText("Saved revision 1")).toBeVisible();
-  page.on("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Approve & send" }).first().click();
+  const pendingDownload = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Export blueprint JSON" })
+    .first()
+    .click();
+  const download = await pendingDownload;
+  expect(download.suggestedFilename()).toMatch(
+    /^creator-blueprint-.*-v1\.json$/,
+  );
+  const exported = JSON.parse(await readFile((await download.path())!, "utf8"));
+  expect(exported.schema_version).toBe("creator_intelligence.blueprint.v1");
+  expect(exported.blueprint.hook).toBe("Your lunch has applied for your job.");
+  expect(exported.blueprint.research_sources[0].url).toBe(
+    "https://www.youtube.com/watch?v=fixture0001",
+  );
   await expect(
-    page.getByRole("status").filter({ hasText: "Delivery:" }),
-  ).toContainText("Delivery: delivered");
-  await page.getByRole("button", { name: "Approve & send" }).first().click();
-  await expect(
-    page.getByRole("status").filter({ hasText: "Delivery:" }),
-  ).toContainText("Delivery: delivered");
+    page.getByRole("button", { name: "Approve & send" }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

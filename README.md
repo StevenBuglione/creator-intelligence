@@ -7,8 +7,8 @@
 Creator Intelligence gives Claude and compatible MCP clients access to official YouTube
 research, owner-authorized reports, original ideas and versioned production blueprints.
 It runs on your machine with TypeScript, Docker Compose, PostgreSQL, Redis/BullMQ,
-Fastify and Next.js. The ContentOS adapter delivers a blueprint only after owner review.
-Your existing pipeline handles rendering and publishing.
+Fastify and Next.js. It is a standalone application: reviewed blueprints export as
+local JSON files with their revision and provenance.
 
 ## Release status
 
@@ -19,7 +19,7 @@ and [known gaps](docs/known-gaps.md) before relying on a feature.
 
 - Public channel/video lookup, bounded uploads ingestion, provenance, quota accounting and 30-day expiry.
 - Read-only owner OAuth, Analytics and Reporting adapters, with explicit missing-data states.
-- Original idea and blueprint editing, versioning, exact-content MCP draft authorization and an idempotent ContentOS outbox.
+- Original idea and blueprint editing, versioning, exact-content MCP draft authorization and local blueprint JSON export.
 - Session/CSRF/PKCE controls, encrypted OAuth tokens, local export/deletion and encrypted original-draft backups.
 - Eighteen MCP tools; five governed analytics tools return a blocked response. No custom-score permission is bundled.
 

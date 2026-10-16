@@ -95,7 +95,7 @@ Optimize,Optimize existing uploaded video,Read performance and propose edits,D,P
 Optimize,Update title description tags,videos.update when separately authorized,O,P3,Never auto-publish changes
 Optimize,Set long-form thumbnail,thumbnails.set with write scope,O,P3,Requires OAuth permission; Shorts differ
 Optimize,Title and description translations,Local language model drafts,L,P3,Human review before publishing
-Optimize,Draft video local upload,Analyze existing ContentOS artifacts or uploaded local file,L,P2,No need to send media to a third party
+Optimize,Draft video local upload,Analyze a user-supplied local media file,L,P2,No need to send media to a third party
 Create,Idea to blueprint,Topic -> title -> thumbnail brief -> outline -> sources,L,P1,Record provenance
 Create,Blueprint save and share,Versioned plans and private links,L,P1,Private by default
 Create,Script writer,Local model with hook beat structure and duration,L,P1,Avoid using stolen competitor scripts
@@ -104,7 +104,7 @@ Create,Generate video description and tags,Reuse optimizer,L,P1,Source checked
 Create,Thumbnail editor,Canvas layers or Remotion templates,L,P2,True editable layers
 Create,AI thumbnail generation,ComfyUI or supported local image model optional,O,P3,GPU and model licenses need verification
 Create,Likeness consistent character asset,Only user consented personal image or owned mascot,O,P3,No unauthorized impersonation
-Create,AI video generator,Local optional video models or ContentOS Remotion pipeline,O,P4,Not quality parity with hosted models
+Create,AI video generator,Optional local video generation from original or permitted assets,O,P4,Not quality parity with hosted models
 Create,AI Shorts generator,Repurpose owned clips in Remotion,L,P2,Do not download competitor audiovisual media
 Create,Long-form clipping,Transcription segmentation reframing FFmpeg,L,P2,Own or licensed source only
 Create,Captions subtitle burn-in,ASR local model and Remotion styling,L,P2,Caption errors require review
@@ -113,7 +113,7 @@ Create,Script voiceover pipeline,Local TTS optional existing paid provider adapt
 Create,AI short concept variations,Fast prompt-to-storyboard variants,L,P2,Final rendering path may differ
 Create,Asset library and exports,Store own media and render jobs locally,L,P2,Object storage optional
 Create,Publish to YouTube,Separate optional YouTube upload worker,O,P4,Uploads subject to API audit and OAuth scopes
-Create,Output to ContentOS,Create project from blueprint with ID provenance,L,P1,Idempotent outbound events
+Create,Local blueprint JSON export,Export a saved blueprint revision with schema version and provenance,L,P1,Local file or MCP response; no delivery to another service
 Extension,YouTube watch-page scorecard,Optional Chrome MV3 extension injecting light UI,L,P3,Site DOM unstable
 Extension,Shorts scorecard,Optional extension panel,L,P3,Public data only
 Extension,Search panel,Optional extension + backend results,A,P3,Search quota and ordering constraints
@@ -140,7 +140,7 @@ Integrations,AI coach fast deep max modes,Local agents with retrieval and tools,
 Integrations,AI context attachments,User-provided images videos and permitted references,L,P2,Rights and privacy
 Integrations,MCP tools for AI agents,MCP stdio and protected streamable HTTP,L,P1,Read-only default
 Integrations,REST API,Fastify OpenAPI and typed SDK,L,P0,Session auth rate limiting
-Integrations,ContentOS backlog sync,Typed adapter with manual accept button,L,P1,No autonomous publishing
+Integrations,External production sync (excluded),Excluded by the standalone application scope,X,P1,Owner scope decision 2026-10-16; no external production integration
 Integrations,Trend digests and alerts,Configurable scheduled email/webhook/dashboard,L,P2,Notify only on meaningful signals
 Integrations,Mobile app,Mobile-first responsive PWA,L,P2,Native app unnecessary
 Integrations,Creator lessons,Curated local knowledge base and links,L,P3,Do not copy proprietary paid courses

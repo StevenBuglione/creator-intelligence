@@ -17,7 +17,6 @@ import type { Store, Entity } from "../../db/src/index.js";
 import { YouTube } from "../../youtube/src/index.js";
 import { quotaDay, quotaReset } from "../../youtube/src/quota.js";
 import { POLICY_VERSION } from "../../domain/src/policy.js";
-import { ContentOS, payloadFor } from "../../contentos/src/index.js";
 import { suggestAngles } from "../../ai/src/index.js";
 import {
   backupAndIntegrity,
@@ -53,7 +52,7 @@ export const readOperations = [
   "blueprint_performance",
   "experiments",
   "analytics",
-  "deliveries",
+  "blueprint_export",
   "export",
   "outliers",
   "compare_competitors",
@@ -63,14 +62,11 @@ export const readOperations = [
 ] as const;
 export const draftOperations = ["idea_save", "blueprint_save"] as const;
 export class Application {
-  readonly contentos: ContentOS;
   constructor(
     readonly store: Store,
     readonly config: Config,
     readonly youtube = new YouTube(store, config),
-  ) {
-    this.contentos = new ContentOS(store, config);
-  }
+  ) {}
   async requireEntity(owner: string, kind: string, id: string) {
     const e = await this.store.entity(owner, kind, id);
     if (!e) throw new AppError("NOT_FOUND", 404);
@@ -100,18 +96,14 @@ export class Application {
       throw new AppError("DIRECT_OWNER_APPROVAL_REQUIRED", 403);
     if (
       actor.role === "worker" &&
-      ![
-        "sync_all",
-        "drain",
-        "purge",
-        "status",
-        "backup_and_integrity",
-      ].includes(operation)
+      !["sync_all", "purge", "status", "backup_and_integrity"].includes(
+        operation,
+      )
     )
       throw new AppError("WORKER_OPERATION_FORBIDDEN", 403);
     const consent = await this.store.policyConsent(owner);
     // Cleanup remains available after a policy revision. Collection, drafts and
-    // delivery (including scheduled work) require the current owner's agreement.
+    // scheduled work require the current owner's agreement.
     if (
       !["purge", "disconnect", "revoke_google_project", "delete_data"].includes(
         operation,
@@ -154,9 +146,8 @@ export class Application {
             verified_at: connection?.verified_at ?? null,
           },
           public_api_configured: !!this.config.YOUTUBE_DATA_API_KEY,
-          contentos_target: this.contentos.target(),
           publishing:
-            "Existing publishing connection preserved; production remains in your existing pipeline.",
+            "Standalone research and planning. No publishing or production delivery integration.",
           derived_metrics: {
             enabled: false,
             reason: "DERIVED_METRIC_APPROVAL_REQUIRED",
@@ -252,7 +243,7 @@ export class Application {
         "youtube_analytics_api",
         {
           limitations: [
-            "Publishing is performed by your existing pipeline. This is an owner-verified video link.",
+            "This is a manually selected, owner-verified video link.",
           ],
         },
       );
@@ -286,8 +277,26 @@ export class Application {
         },
       );
     }
-    if (operation === "deliveries")
-      return envelope(await this.store.deliveries(owner), "system");
+    if (operation === "blueprint_export") {
+      const row = await this.requireEntity(
+        owner,
+        "blueprint",
+        uuid.parse(data.id),
+      );
+      if (row.version !== z.number().int().positive().parse(data.revision))
+        throw new AppError("REVISION_CONFLICT", 409);
+      return envelope(
+        {
+          schema_version: "creator_intelligence.blueprint.v1",
+          blueprint_id: row.id,
+          revision: row.version,
+          exported_at: new Date().toISOString(),
+          blueprint: row.body,
+          provenance: row.meta,
+        },
+        "user_input",
+      );
+    }
     if (operation === "suggest_angles")
       return suggestAngles(
         this.config,
@@ -299,8 +308,6 @@ export class Application {
       );
     if (operation === "export")
       return envelope(await this.store.exportData(owner), "user_input");
-    if (operation === "drain")
-      return envelope(await this.contentos.drain(owner), "system");
     return this.store.exclusive(`owner:${owner}`, async () => {
       if (actor.role === "agent") {
         const authorization = z.string().min(32).safeParse(data.authorization);
@@ -570,62 +577,6 @@ export class Application {
             deleted: true,
             google_revocation: "not_requested_to_preserve_existing_publishing",
           },
-          "system",
-        );
-      }
-      if (operation === "approve") {
-        if (actor.role !== "owner" || !actor.sessionHash)
-          throw new AppError("DIRECT_OWNER_APPROVAL_REQUIRED", 403);
-        const blueprint = await this.requireEntity(
-          owner,
-          "blueprint",
-          uuid.parse(data.id),
-        );
-        if (blueprint.version !== data.revision)
-          throw new AppError("REVISION_CONFLICT", 409);
-        const token = randomToken(),
-          hash = digest(JSON.stringify(payloadFor(blueprint))),
-          target = this.contentos.target();
-        await this.store.approveAction(
-          digest(token),
-          owner,
-          actor.sessionHash,
-          blueprint,
-          hash,
-          target,
-        );
-        return envelope(
-          {
-            approval: token,
-            blueprint_id: blueprint.id,
-            revision: blueprint.version,
-            target,
-            expires_in_seconds: 900,
-          },
-          "user_input",
-        );
-      }
-      if (operation === "send") {
-        const blueprint = await this.requireEntity(
-            owner,
-            "blueprint",
-            uuid.parse(data.id),
-          ),
-          payload = payloadFor(blueprint);
-        const delivery = await this.store.enqueueDelivery(
-          owner,
-          digest(z.string().min(32).parse(data.approval)),
-          `approved-blueprint:${blueprint.id}:${blueprint.version}`,
-          blueprint,
-          payload,
-          digest(JSON.stringify(payload)),
-          this.contentos.target(),
-        );
-        await this.contentos.deliver(delivery);
-        return envelope(
-          (await this.store.deliveries(owner)).find(
-            (d) => d.id === delivery.id,
-          ),
           "system",
         );
       }

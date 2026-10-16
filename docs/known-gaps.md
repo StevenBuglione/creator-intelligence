@@ -4,12 +4,13 @@ Version 0.1.0 is a runnable release candidate, not completion of all P0/P1 accep
 The 151-row coverage ledger preserves planned, implemented, tested, demo and live distinctions.
 
 - Each operator needs their own Google project, API key, OAuth client and channel consent.
-  The maintainer's new owner OAuth flow is still not live-account verified. Offline OAuth
-  tests do not establish Google's approval or consent for an installation.
-- MCP protocol behavior is tested; the maintainer's managed Claude registration still needs
-  administrator allowlisting and actual client verification.
-- ContentOS's typed adapter, queue and idempotency are fixture-tested. A real production
-  receiver and service authorization are not verified by those tests.
+  The maintainer's dedicated owner OAuth flow and real public/overview/traffic reads were
+  verified on 2026-10-16. Two reach jobs exist; reports have not arrived. Other installations
+  need their own authorization. Neither tests nor a successful read establish Google approval.
+- MCP protocol behavior and registration are tested. Actual Claude invocation is being
+  rechecked after owner sign-in; see the verification record for the latest evidence.
+- Blueprint JSON export is local. External production sync is excluded by the owner's
+  standalone scope decision; it is not an integration waiting for credentials.
 - All 28 approval-gated backlog features remain not started/disabled. The five corresponding
   MCP tools return a policy error. No custom scores or extended API history are enabled.
 - Collection is capped at 200 visible uploads per channel per sync. No full YouTube index,

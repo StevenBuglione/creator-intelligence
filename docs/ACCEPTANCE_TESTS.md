@@ -1,12 +1,14 @@
 # Acceptance test plan and quality gates
 
+Scope revision, 2026-10-16: the owner requires a standalone application. The selected P1 slice ends in local blueprint JSON export. External production sync is excluded. The ledger retains all 151 IDs and records this scope change.
+
 This is an executable test design, not a claim that code or tests have been written. Codex should turn the cases below into Vitest, Playwright, integration tests, contract tests, and repeatable shell tasks. Everything listed as **required** must be runnable offline with representative deterministic fake provider responses; live-credential tests are optional and require the operator's consent.
 
 ## A. Commands and final demonstration
 
-```bash
-cp .env.example .env
-# configure locally; no committed secrets
+```powershell
+# Follow README.md to initialize private credentials outside Git.
+# PostgreSQL must be running; use scripts/with-local-env.ps1 to load the environment.
 pnpm install --frozen-lockfile
 pnpm lint
 pnpm typecheck
@@ -16,9 +18,9 @@ pnpm test:quota
 pnpm verify:policy
 pnpm test:e2e
 # Start production-like deployment
-# docker compose -f infra/docker/compose.yaml --env-file .env up --build -d
-# docker compose -f infra/docker/compose.yaml ps
-# curl -f http://localhost:3001/healthz
+# ./scripts/with-local-env.ps1 docker compose up --build -d
+# ./scripts/with-local-env.ps1 docker compose ps
+# Invoke-WebRequest http://localhost:4311/healthz
 ```
 
 Provide a single `pnpm verify` that runs the static/test suite, plus `pnpm seed:demo` for test fixtures. `pnpm test:integration:google` runs only when the operator separately provides valid credentials; it must not be part of default CI.
@@ -42,7 +44,7 @@ Provide a single `pnpm verify` that runs the static/test suite, plus `pnpm seed:
 15. **No external scraping:** block disallowed/unsupported YouTube HTML scraping or third-party caption download from the approved provider interface. Only official endpoints for YouTube statistics. Media jobs require original locally supplied or licensed video assets.
 16. **Disconnected owner:** owner-authenticated analytics 401/403 and account revocation trigger appropriate auth status; implement data-deletion scheduling and test against policy deadlines; user-initiated delete can force immediate application purge with backup lifecycle properly documented.
 
-## C. Required P1: editor and ContentOS contract
+## C. Required P1: editor and standalone export
 
 17. **Research candidate:** a public video is shown with original, untransformed API metrics and source video link; an editor can manually save it as an inspiration reference, no illegal derived competitor ranking.
 18. **Candidate quality:** operator creates 3 distinct creative angles from references with a local LLM; when no LLM is available, a manual blueprint is still usable. No disguised invented YouTube CTR or popularity probability.
@@ -52,7 +54,7 @@ Provide a single `pnpm verify` that runs the static/test suite, plus `pnpm seed:
 22. **Script and thumbnail:** generate title variants, hook and outline with associated source URLs, tag output as AI-generated, produce thumbnail editorial brief without needing paid image generation, support user edits and versioning.
 23. **A/B tests:** local experiment ledger records title/thumb variant periods, but does not claim randomized exposure or causation if not using official experimental framework.
 24. **Publish prevention:** no video upload, public comment reply, title edit or thumbnail update endpoint may mutate YouTube in P0/P1. If future feature added, distinct OAuth write scope plus preview and per-action confirmation.
-25. **ContentOS flow:** press `Approve & send` on a chosen blueprint; API emits `creator_intelligence.blueprint.approved.v1`, receiving ContentOS project ID; repeated clicks/retries with same revision yield exactly one ContentOS backlog project; a changed revision gets a new key. Test target absent and offline retry queue.
+25. **Standalone export:** save an original blueprint, then export its exact saved revision as JSON with schema version, blueprint ID, revision, export timestamp and provenance. Reject a stale revision after an edit. Verify the downloaded file on desktop and mobile and API/MCP parity. No external production adapter, delivery route, delivery schedule or publishing path may exist.
 26. **MCP parity:** agent can retrieve same channels, owner metrics, candidate, idea and blueprint that REST API returns and can never bypass OAuth, owner boundaries or compliance gates. Mutating MCP tool requires explicit action authorization and is not callable by a background agent without direct owner approval.
 
 ## D. Permission-gated expansion (only after *accepted* YouTube analytics application)
@@ -66,7 +68,7 @@ Provide a single `pnpm verify` that runs the static/test suite, plus `pnpm seed:
 ## E. Creativity and source-integrity tests
 
 32. **Copyright/rights:** generated clips and transcript-derived edits accept local user-owned/permitted assets only. A nonowned YouTube watch URL by itself is insufficient authorization to download media or third-party captions.
-33. **Prompt injection:** adversarial YouTube titles, descriptions and comments cannot trigger file reads, agent token leakage, dangerous commands, YouTube modifications or ContentOS sends. Sanitize/untrust retrieved text and require owner approval for outbound actions.
+33. **Prompt injection:** adversarial YouTube titles, descriptions and comments cannot trigger file reads, agent token leakage, dangerous commands, YouTube modifications or external deliveries. Treat retrieved text as untrusted and require exact-content owner authorization for agent draft writes.
 34. **Content quality:** seeded prompts yield at least 3 *meaningfully different* titles/angles, user edits persist, source claims are auditable; any unsupported claim is flagged rather than quietly invented.
 35. **UI:** desktop, 390px mobile, keyboard operation, functional chart empty states, non-ambiguous missing-data legend, loading and error states, dark mode contrast, button focus and editable dialogs. No action control is decorative only.
 36. **Freshness:** dashboard that previously showed fresh metrics continues to load from DB when YouTube is offline, with correct `last_synced` badge. Never label stale views as current live stats.
@@ -79,7 +81,7 @@ Provide a single `pnpm verify` that runs the static/test suite, plus `pnpm seed:
 
 **P0 exit:** local stack starts, offline demo passes, real-data probes work when keys supplied, no secret exposure, honest metrics, quota manager and 30d default retention enforced, guarded derived score endpoint rejects requests, user can connect owner channel and see own real data.
 
-**P1 exit:** create original idea -> save versioned blueprint -> click approve -> exactly one ContentOS backlog job, plus useful owner retention/reach dashboard, app is mobile-usable. Without ContentOS credentials, a mock adapter must show the exact future contract and functional local queue, not claim an external job was created.
+**P1 exit:** create original idea -> save versioned blueprint -> download local JSON with matching revision and provenance. The owner reports UI is mobile-usable and distinguishes real reports, fixture tests and pending reach data. No production receiver is required or connected. Remaining automatic writing and report-availability gaps are recorded in the ledger; local export does not claim a video was produced or published.
 
 **P2+ exit:** each optional feature is independently tested; expensive and privileged providers disabled by default. `docs/known-gaps.md` lists all remaining divergence from proprietary vidIQ features.
 

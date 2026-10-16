@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { readFileSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { homedir } from "node:os";
 
 const schema = z.object({
@@ -30,9 +30,6 @@ const schema = z.object({
   GOOGLE_PROJECT_NUMBER: z.string().regex(/^\d+$/),
   LOCAL_LLM_BASE_URL: z.string().url().optional(),
   LOCAL_LLM_MODEL: z.string().optional(),
-  CONTENTOS_API_URL: z.string().url().optional(),
-  CONTENTOS_SERVICE_TOKEN: z.string().optional(),
-  CONTENTOS_LOCAL_INBOX: z.string().optional(),
   BACKUP_DIR: z.string().default("backups/automatic"),
   BACKUP_RETENTION_DAYS: z.coerce.number().int().min(1).max(30).default(7),
   GENERAL_DAILY_BUDGET: z.coerce.number().int().min(1).max(9000).default(9000),
@@ -66,7 +63,5 @@ export function getConfig(env: NodeJS.ProcessEnv = process.env): Config {
     )
       throw new Error("Remote access requires HTTPS");
   }
-  if (config.CONTENTOS_LOCAL_INBOX)
-    config.CONTENTOS_LOCAL_INBOX = resolve(config.CONTENTOS_LOCAL_INBOX);
   return config;
 }

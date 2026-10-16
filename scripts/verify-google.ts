@@ -20,7 +20,10 @@ try {
   });
   const connection = await store.connection(config.OWNER_ID);
   const video = process.env.VERIFY_VIDEO_ID
-    ? await app.youtube.lookupVideo(config.OWNER_ID, process.env.VERIFY_VIDEO_ID)
+    ? await app.youtube.lookupVideo(
+        config.OWNER_ID,
+        process.env.VERIFY_VIDEO_ID,
+      )
     : undefined;
   let owner: unknown = "pending_new_app_consent";
   if (connection) {
@@ -30,10 +33,13 @@ try {
   const evidence = {
     verified_at: new Date().toISOString(),
     public: publicResult,
-    single_video: video ? {
-      id: video.id,
-      statistics_available: Object.keys(video.body.statistics as object).length > 0,
-    } : "not_requested",
+    single_video: video
+      ? {
+          id: video.id,
+          statistics_available:
+            Object.keys(video.body.statistics as object).length > 0,
+        }
+      : "not_requested",
     owner,
     new_app_connection: !!connection,
     existing_publishing: "unchanged",

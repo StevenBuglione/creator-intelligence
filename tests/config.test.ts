@@ -27,8 +27,17 @@ describe("installation identity", () => {
     expect(() => getConfig(env)).toThrow();
   });
   it("rejects unset or malformed project and channel placeholders", () => {
-    expect(() => getConfig({ ...environment(), GOOGLE_PROJECT_NUMBER: undefined })).toThrow();
-    expect(() => getConfig({ ...environment(), GOOGLE_PROJECT_NUMBER: "YOUR_PROJECT_NUMBER" })).toThrow();
-    expect(() => getConfig({ ...environment(), OWNED_CHANNEL_ID: "YOUR_CHANNEL_ID" })).toThrow();
+    expect(() =>
+      getConfig({ ...environment(), GOOGLE_PROJECT_NUMBER: undefined }),
+    ).toThrow();
+    expect(() =>
+      getConfig({
+        ...environment(),
+        GOOGLE_PROJECT_NUMBER: "YOUR_PROJECT_NUMBER",
+      }),
+    ).toThrow();
+    expect(() =>
+      getConfig({ ...environment(), OWNED_CHANNEL_ID: "YOUR_CHANNEL_ID" }),
+    ).toThrow();
   });
 });

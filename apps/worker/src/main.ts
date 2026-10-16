@@ -12,9 +12,21 @@ const invoke = apiInvoke(
   process.env.CI_API_INTERNAL ?? "http://localhost:4311",
   process.env.WORKER_TOKEN,
 );
+const schedules = [
+  ["purge", 3600000],
+  ["sync_all", 6 * 3600000],
+  ["backup_and_integrity", 24 * 3600000],
+] as const;
+const allowed = new Set<string>(schedules.map(([name]) => name));
+// Remove retired schedules on upgrade; queued obsolete jobs cannot execute.
+for (const scheduled of await queue.getJobSchedulers())
+  if (!allowed.has(scheduled.name))
+    await queue.removeJobScheduler(scheduled.key);
 const worker = new Worker(
   "creator-intelligence",
   async (job) => {
+    if (!allowed.has(job.name))
+      throw new UnrecoverableError("RETIRED_OPERATION");
     try {
       return await invoke(job.name, {});
     } catch (error) {
@@ -33,12 +45,7 @@ worker.on("failed", (job) =>
     `Worker job ${job?.name ?? "unknown"} failed; inspect service health`,
   ),
 );
-for (const [name, every] of [
-  ["purge", 3600000],
-  ["drain", 60000],
-  ["sync_all", 6 * 3600000],
-  ["backup_and_integrity", 24 * 3600000],
-] as const)
+for (const [name, every] of schedules)
   await queue.upsertJobScheduler(
     name,
     { every },

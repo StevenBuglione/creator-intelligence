@@ -15,7 +15,7 @@ describe("versioned privacy consent and MCP sharing", () => {
           app.call({ owner: config.OWNER_ID, role }, "status"),
         ).rejects.toThrow("POLICY_ACCEPTANCE_REQUIRED");
       }
-      for (const op of ["sync_all", "drain", "backup_and_integrity"])
+      for (const op of ["sync_all", "backup_and_integrity"])
         await expect(
           app.call({ owner: config.OWNER_ID, role: "worker" }, op),
         ).rejects.toThrow("POLICY_ACCEPTANCE_REQUIRED");

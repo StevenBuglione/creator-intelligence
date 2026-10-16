@@ -629,10 +629,10 @@
     "group": "Owned Analytics",
     "phase": "P0",
     "availability": "D",
-    "actual_status": "tested",
+    "actual_status": "live_verified",
     "implementation_link": "apps/api/src/server.ts",
-    "test_name": "tests/policy.test.ts; tests/providers.test.ts; tests/negative.test.ts; tests/consent.test.ts",
-    "unavailable_reason": "Dedicated OAuth client configuration prepared; new-app human consent and live owner verification remain pending. Versioned policy acceptance and optional MCP sharing are tested; no consent is inferred.",
+    "test_name": "tests/policy.test.ts; tests/providers.test.ts; tests/negative.test.ts",
+    "unavailable_reason": "Dedicated project and read-only web client connected after genuine owner consent on 2026-10-16. Exact owner channel and both requested read scopes verified. Each installation needs its own consent.",
     "compliance_gate": null
   },
   {
@@ -644,7 +644,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -656,7 +656,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -668,7 +668,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -692,7 +692,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -704,7 +704,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -716,7 +716,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -728,7 +728,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -740,7 +740,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -860,7 +860,7 @@
     "actual_status": "demo_verified",
     "implementation_link": "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+    "unavailable_reason": "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
     "compliance_gate": null
   },
   {
@@ -1170,9 +1170,9 @@
     "phase": "P1",
     "availability": "L",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; packages/contentos/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Manual/Claude-authored original drafts and local versioning work. Exact ContentOS contract tested via fixture/HTTP receiver; real production receiver and credentials unverified. Sharing is local MCP/JSON, not public hosting.",
+    "unavailable_reason": "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
     "compliance_gate": null
   },
   {
@@ -1182,9 +1182,9 @@
     "phase": "P1",
     "availability": "L",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; packages/contentos/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Manual/Claude-authored original drafts and local versioning work. Exact ContentOS contract tested via fixture/HTTP receiver; real production receiver and credentials unverified. Sharing is local MCP/JSON, not public hosting.",
+    "unavailable_reason": "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
     "compliance_gate": null
   },
   {
@@ -1369,14 +1369,14 @@
   },
   {
     "feature_id": "CI-115",
-    "feature": "Output to ContentOS",
+    "feature": "Local blueprint JSON export",
     "group": "Create",
     "phase": "P1",
     "availability": "L",
     "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; packages/contentos/src/index.ts; apps/web/app/page.tsx",
+    "implementation_link": "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
     "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Manual/Claude-authored original drafts and local versioning work. Exact ContentOS contract tested via fixture/HTTP receiver; real production receiver and credentials unverified. Sharing is local MCP/JSON, not public hosting.",
+    "unavailable_reason": "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
     "compliance_gate": null
   },
   {
@@ -1676,7 +1676,7 @@
     "actual_status": "tested",
     "implementation_link": "apps/mcp/src/server.ts; apps/api/src/server.ts; packages/intelligence/src/client.ts",
     "test_name": "tests/workflow.test.ts; scripts/verify-stack.ts",
-    "unavailable_reason": "HTTP and stdio handshakes passed. Claude registration was rejected by enterprise MCP policy; administrator allowlisting is required.",
+    "unavailable_reason": "HTTP and stdio handshakes and standalone export tool discovery passed. Real authenticated Claude Code creator_status invocation succeeded on 2026-10-16. Agent draft writes are fixture-tested, not claimed as live Claude writes.",
     "compliance_gate": null
   },
   {
@@ -1688,19 +1688,19 @@
     "actual_status": "tested",
     "implementation_link": "apps/mcp/src/server.ts; apps/api/src/server.ts; packages/intelligence/src/client.ts",
     "test_name": "tests/workflow.test.ts; scripts/verify-stack.ts",
-    "unavailable_reason": "HTTP and stdio handshakes passed. Claude registration was rejected by enterprise MCP policy; administrator allowlisting is required.",
+    "unavailable_reason": "HTTP and stdio handshakes and standalone export tool discovery passed. Real authenticated Claude Code creator_status invocation succeeded on 2026-10-16. Agent draft writes are fixture-tested, not claimed as live Claude writes.",
     "compliance_gate": null
   },
   {
     "feature_id": "CI-142",
-    "feature": "ContentOS backlog sync",
+    "feature": "External production sync (excluded)",
     "group": "Integrations",
     "phase": "P1",
-    "availability": "L",
-    "actual_status": "demo_verified",
-    "implementation_link": "packages/intelligence/src/index.ts; packages/contentos/src/index.ts; apps/web/app/page.tsx",
-    "test_name": "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
-    "unavailable_reason": "Manual/Claude-authored original drafts and local versioning work. Exact ContentOS contract tested via fixture/HTTP receiver; real production receiver and credentials unverified. Sharing is local MCP/JSON, not public hosting.",
+    "availability": "X",
+    "actual_status": "not_started",
+    "implementation_link": null,
+    "test_name": null,
+    "unavailable_reason": "Excluded by the owner's standalone scope decision on 2026-10-16. No external production sync is implemented or planned for this release.",
     "compliance_gate": null
   },
   {

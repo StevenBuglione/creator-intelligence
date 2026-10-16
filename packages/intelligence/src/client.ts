@@ -5,7 +5,7 @@ import {
   blueprintInput,
   ideaInput,
 } from "../../domain/src/index.js";
-import type { Entity, Observation, Delivery } from "../../db/src/index.js";
+import type { Entity, Observation } from "../../db/src/index.js";
 export class CreatorClient {
   private origin: URL;
   constructor(
@@ -76,8 +76,8 @@ export class CreatorClient {
       ...(video_id ? { video_id } : {}),
     });
   }
-  deliveries() {
-    return this.invoke<Delivery[]>("deliveries");
+  exportBlueprint(id: string, revision: number) {
+    return this.invoke("blueprint_export", { id, revision });
   }
   saveIdea(body: z.input<typeof ideaInput>, authorization: string) {
     return this.invoke<Entity>("idea_save", { body, authorization });

@@ -62,16 +62,15 @@ your connected AI client sends them to a provider. Verify its data-handling sett
 
 In Settings, authorize the exact JSON for one Claude draft before calling `creator_idea_save`
 or `creator_blueprint_save`. The one-use authorization is bound to content/session and expires
-after 15 minutes. It does not authorize sending to ContentOS. Review the blueprint revision
-and target separately in the UI to approve delivery. Agents cannot grant that approval.
+after 15 minutes. Review the saved blueprint and export its current revision as local JSON.
 
-## Production integration
+## Standalone blueprint export
 
-Configure `CONTENTOS_API_URL` and `CONTENTOS_SERVICE_TOKEN` only for a receiver implementing
-[CONTENTOS.md](CONTENTOS.md). Missing targets remain queued/disconnected. Synthetic inboxes
-are allowed only in test/demo mode. A retry retains its original payload and idempotency key;
-changed revisions or destinations require fresh approval. Rendering and YouTube publishing
-belong to the existing production pipeline and its separate permissions.
+The UI's Export blueprint JSON button downloads the selected saved revision. The
+`creator_blueprint_export` MCP tool returns the same schema: `creator_intelligence.blueprint.v1`,
+blueprint ID, revision, export time, original blueprint and provenance. A stale revision is
+rejected so the exported content always matches the requested version. There is no receiver,
+outbound delivery queue, external production adapter or publishing integration.
 
 ## Tests and recovery
 
@@ -80,8 +79,9 @@ owners, plus `creator_intelligence_demo` on ports 4410/4411 for browser tests. D
 only the disposable demo owner. Chrome is used on Windows; install Playwright Chromium on Linux.
 The default suite uses fake providers. Tests must never be pointed at someone else's data.
 
-The worker syncs every six hours, purges hourly, drains deliveries each minute and backs up
-original drafts daily. Collection, delivery and backups require current policy agreement.
+The worker syncs every six hours, purges hourly and backs up original drafts daily.
+Collection and backups require current policy agreement. Startup removes retired schedules
+and rejects obsolete queued operations without executing them.
 Owner report caches expire within 30 days unless refreshed, as well as being removed on
 disconnect. Backups exclude API caches, Google tokens and private analytics.
 Managed encrypted backups normally expire after seven days and are removed by Delete My Data.

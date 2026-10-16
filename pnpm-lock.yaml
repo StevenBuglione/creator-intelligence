@@ -122,8 +122,6 @@ importers:
 
   packages/config: {}
 
-  packages/contentos: {}
-
   packages/db: {}
 
   packages/domain: {}

@@ -37,12 +37,12 @@ const groups: {
   },
   {
     ids: ["CI-053"],
-    status: "tested",
+    status: "live_verified",
     implementation: "apps/api/src/server.ts",
     tests:
       "tests/policy.test.ts; tests/providers.test.ts; tests/negative.test.ts",
     reason:
-      "Dedicated web client created; JSON download and human consent are pending. Existing MCP authorization is separate evidence.",
+      "Dedicated project and read-only web client connected after genuine owner consent on 2026-10-16. Exact owner channel and both requested read scopes verified. Each installation needs its own consent.",
   },
   {
     ids: [
@@ -60,7 +60,7 @@ const groups: {
     implementation: "packages/youtube/src/index.ts; apps/web/app/page.tsx",
     tests: "tests/providers.test.ts; tests/e2e/workspace.spec.ts",
     reason:
-      "Deterministic owner fixtures and reporting parser tested. New-app live owner consent remains pending; provider suppression/lag is explicit.",
+      "Deterministic owner fixtures and reporting parser tested. Maintainer owner consent and overview/traffic retrieval verified; individual metric availability is not inferred. Two reach jobs exist but no report has arrived. Retention and reach display tests use fixtures; provider suppression/lag is explicit.",
   },
   {
     ids: ["CI-024"],
@@ -79,14 +79,13 @@ const groups: {
       "Local model JSON validation tested with deterministic responses; actual model output quality is not live verified.",
   },
   {
-    ids: ["CI-098", "CI-099", "CI-115", "CI-142"],
+    ids: ["CI-098", "CI-099", "CI-115"],
     status: "demo_verified",
-    implementation:
-      "packages/intelligence/src/index.ts; packages/contentos/src/index.ts; apps/web/app/page.tsx",
+    implementation: "packages/intelligence/src/index.ts; apps/web/app/page.tsx",
     tests:
       "tests/workflow.test.ts; tests/recovery.test.ts; tests/e2e/workspace.spec.ts",
     reason:
-      "Manual/Claude-authored original drafts and local versioning work. Exact ContentOS contract tested via fixture/HTTP receiver; real production receiver and credentials unverified. Sharing is local MCP/JSON, not public hosting.",
+      "Original drafts, revision checks and local JSON export with provenance verified through API tests and desktop/mobile downloads. No external production adapter or delivery operation exists. Sharing is local MCP/JSON, not public hosting.",
   },
   {
     ids: ["CI-100"],
@@ -103,10 +102,19 @@ const groups: {
       "apps/mcp/src/server.ts; apps/api/src/server.ts; packages/intelligence/src/client.ts",
     tests: "tests/workflow.test.ts; scripts/verify-stack.ts",
     reason:
-      "HTTP and stdio handshakes passed. Claude registration was rejected by enterprise MCP policy; administrator allowlisting is required.",
+      "HTTP and stdio handshakes and standalone export tool discovery passed. Real authenticated Claude Code creator_status invocation succeeded on 2026-10-16. Agent draft writes are fixture-tested, not claimed as live Claude writes.",
   },
 ];
 for (const e of ledger) {
+  if (e.feature_id === "CI-142") {
+    e.actual_status = "not_started";
+    e.implementation_link = null;
+    e.test_name = null;
+    e.compliance_gate = null;
+    e.unavailable_reason =
+      "Excluded by the owner's standalone scope decision on 2026-10-16. No external production sync is implemented or planned for this release.";
+    continue;
+  }
   if (e.availability === "G") {
     e.actual_status = "not_started";
     e.compliance_gate = "DERIVED_METRIC_APPROVAL_REQUIRED";

@@ -1,61 +1,56 @@
-# Open-source release verification
+# Release verification
 
-Prepared 2026-10-16. This is the initial public source release of version 0.1.0.
-Fresh checks ran against the public source checkout on 2026-10-16 with Node 24.19.0,
-pnpm 11.25.0, an isolated PostgreSQL/Redis stack and generated test-only credentials.
+Checked 2026-10-16 against the standalone public source checkout with Node 24.19.0,
+pnpm 11.25.0 and isolated test/demo databases. This remains a release candidate;
+the 151-row backlog is not a list of completed capabilities.
 
 | Check | Actual result |
 |---|---|
-| Frozen dependency install | Passed on Windows and in the Linux image build |
 | ESLint and strict TypeScript | Passed |
-| Vitest | 43 passed across eight files, including three installation-identity checks |
-| Production build | Passed on Windows and inside the Linux Docker image |
-| Playwright | Two passed: desktop 1440px and mobile 390px reviewed blueprint workflows |
-| Windows initialization | Created an isolated ACL-protected environment from supplied fixture channel/project IDs |
-| Docker Compose runtime | Six services started in an isolated test project on separate loopback ports |
-| API/UI smoke | HTTP 200; unauthenticated API operation rejected with HTTP 401 |
-| MCP HTTP and stdio | Both initialized, listed 18 tools, returned status and rejected derived metrics |
-| Redis/worker | PONG; sync, purge, delivery and backup schedules present; first draft backup integrity verified |
-| Documentation preview | Homepage inspected in browser; no document overflow at the available 304px viewport |
+| Vitest | 47 passed across nine files |
+| Windows production build | Passed |
+| Playwright | Desktop 1440px and mobile 390px passed, including actual blueprint JSON downloads |
+| Blueprint export | Exact revision, schema, original content and provenance returned; stale revision rejected |
+| Retired production operations | Approve, send, drain and delivery reads rejected, including for the owner |
+| Build cleanup | Generated server output is removed before compilation to prevent stale executable modules |
 
-The configuration has no maintainer channel/project defaults. OAuth compares the configured
-immutable channel ID and permits its display name to differ. Wrong-channel and replay
-rejection tests still pass. The live Google probe takes an optional operator-supplied video ID.
-The MCP smoke verifier supports a separate test endpoint through MCP_ORIGIN.
+The suite uses synthetic provider responses. Privacy tests cover owner-only versioned
+agreement, CSRF, optional MCP sharing off by default, immediate sharing revocation,
+policy renewal and no automatic consent. Owner reports expire within 30 days and expired
+records are excluded and purged. Agent reads do not call Google transport or refresh
+Google tokens; collection operations are unavailable to agents.
 
-Tests used synthetic provider responses and isolated test/demo databases; the runtime smoke
-used an empty test workspace. No live Google calls or production ContentOS delivery occurred
-during these checks. They do not certify every external installation, creative output quality,
-or Google compliance. See known-gaps.md for remaining acceptance gates.
+The standalone Linux image built with a frozen dependency install and passed isolated
+six-service startup, UI/API health and HTTP 401 without authentication. HTTP and stdio
+each listed 18 tools, including blueprint export and excluding delivery reads. Both
+returned stored status and blocked derived metrics. Exactly three worker schedules
+remain: sync, purge and backup. The same checks passed after the maintainer's live
+deployment upgrade, with its database backed up first. No obsolete compiled adapter
+remains in generated server output. The current daily backup had not yet completed;
+prior backup/restore evidence is historical, not a new completion claim.
 
-The earlier private implementation passed 40 Vitest cases and two browser workflows and
-made real public API reads. Those historical results do not certify modifications in this
-release. The two live_verified entries in feature_coverage.json preserve those historical
-public-adapter reads, not a new operator's authorization. No new owner OAuth, managed Claude
-registration or production ContentOS delivery is claimed. Public release and YouTube approval
-are distinct. The ledger retains 128 not_started, two live_verified, one implemented, six tested,
-13 demo_verified and one in_progress entries; all 28 G-class features remain disabled.
+The earlier consent revision's pre-consent MCP status check returned
+POLICY_ACCEPTANCE_REQUIRED. The standalone suite repeats the underlying consent tests.
 
+## Authorized live evidence
 
-## Audit-readiness revision, 2026-10-16
+On 2026-10-16 the maintainer connected a dedicated Google project and web OAuth client
+after personally accepting the local policy, optional MCP sharing and Google consent.
+The connection matched the configured owner channel with exactly youtube.readonly and
+yt-analytics.readonly. Real public channel/video reads and owner overview/traffic
+retrieval succeeded. Two reach jobs exist; no reach report has arrived. No missing
+impression or CTR value is presented as a measured zero. Retention/reach display
+checks still use fixtures, not evidence that every live report is available.
 
-The current revision passed ESLint, strict TypeScript, 48 Vitest tests across nine files,
-a Windows production build and both desktop/mobile Playwright workflows. The Linux Docker
-image built successfully. An isolated six-service Compose deployment passed UI/API health,
-HTTP 401 without authentication, and HTTP/stdio MCP initialization with 18 tools each.
-Both transports returned stored status and rejected governed metrics after explicit fixture
-consent. Before fixture consent, MCP status returned POLICY_ACCEPTANCE_REQUIRED.
-The isolated worker registered all four schedules; its daily backup had not yet completed
-at this check. Earlier backup evidence is historical and is not a new completion claim.
+Claude registration and allowlisting are configured. After owner sign-in, a real
+Claude Code invocation called creator_status and received the live connected state,
+disabled metrics and standalone boundary. This proves a client read, not a live
+agent draft write or verification of every tool. Account training settings are an
+owner attestation, not independently inspected evidence. No production Google
+revocation was performed; destructive deletion/revocation tests use isolated fixtures.
 
-New checks cover versioned privacy/terms agreement, CSRF and owner-only acceptance,
-optional MCP sharing disabled by default, immediate sharing revocation, policy renewal,
-no automatically accepted policies, and owner-report expiry/purge. MCP reads do not call
-Google transport or token refresh, and collection operations are rejected for agents.
-The local deployment was backed up and upgraded through migrations 1, 2 and 3; existing
-migration checksums are preserved. A running deployment still requires its owner's actual
-agreement and Google consent. Tests do not substitute for either.
-
-New-app Google owner authorization, actual managed-Claude use, and a real ContentOS receipt
-remain separate live acceptance gates. The feature ledger retains the previous statuses;
-these security and retention checks do not imply completion of the 151-feature backlog.
+Public code, installation consent, OAuth verification and YouTube additional-metric
+approval are distinct. All 28 governed backlog features remain unimplemented and
+disabled. External production sync is excluded from the standalone scope. Each
+installation supplies its own credentials and permissions. See known-gaps.md and
+feature_coverage.json for remaining acceptance boundaries.

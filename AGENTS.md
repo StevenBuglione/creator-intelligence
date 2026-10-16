@@ -6,10 +6,10 @@ Maintain feature_coverage.json honestly. Planned, fixture-tested and real-provid
 
 This is an MIT-licensed TypeScript, local-first MCP application. Each installation has one owner.
 Preserve official YouTube API boundaries, default-disabled derived metrics, local secrets,
-30-day public-data expiry, exact owner channel checks and explicit approval of outbound production delivery.
+30-day public-data expiry, exact owner channel checks and local blueprint JSON export.
 Never copy another installation's Google credentials, analytics or private application materials.
 Do not add paid dependencies, scraping, quota bypass or YouTube publishing routes to this release.
-Existing production and publishing integrations are separate.
+The application is standalone. Do not add external production adapters or delivery routes.
 
 Use local pnpm verify. Do not add application CI workflows. GitHub Pages may use GitHub's
 built-in branch deployment for docs/; it publishes documentation only.

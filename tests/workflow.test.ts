@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { Application } from "../packages/intelligence/src/index.js";
 import { createServer } from "../apps/api/src/server.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -11,114 +8,60 @@ import { createMcp } from "../apps/mcp/src/server.js";
 import { testStore, blueprint } from "./helpers.js";
 import type { Envelope } from "../packages/domain/src/index.js";
 import type { Entity } from "../packages/db/src/index.js";
-describe("owner-reviewed production workflow", () => {
-  it("delivers one project per revision with concurrent clicks; rejects a changed approval", async () => {
-    const { store, config, cleanup } = await testStore(),
-      inbox = await mkdtemp(join(tmpdir(), "ci-test-inbox-"));
-    config.CONTENTOS_LOCAL_INBOX = inbox;
-    try {
-      const application = new Application(store, config),
-        owner = config.OWNER_ID;
-      await store.putSession(
-        "owner-session",
-        owner,
-        "csrf",
-        new Date(Date.now() + 3600000),
-      );
-      const actor = {
-        owner,
-        role: "owner" as const,
-        sessionHash: "owner-session",
-      };
-      const saved = (await application.call(actor, "blueprint_save", {
-        body: blueprint,
-      })) as Envelope<Entity>;
-      const approval = (await application.call(actor, "approve", {
-        id: saved.data.id,
-        revision: 1,
-      })) as Envelope<{ approval: string }>;
-      await Promise.all(
-        Array.from({ length: 5 }, () =>
-          application.call(actor, "send", {
-            id: saved.data.id,
-            approval: approval.data.approval,
-          }),
-        ),
-      );
-      expect(await readdir(inbox)).toHaveLength(1);
-      expect(await store.deliveries(owner)).toHaveLength(1);
-      expect((await store.deliveries(owner))[0]?.state).toBe("delivered");
-      expect((await store.deliveries(owner))[0]?.payload).toMatchObject({
-        event_type: "creator_intelligence.blueprint.approved.v1",
-        source_app: "creator-intelligence",
-        idempotency_key: `approved-blueprint:${saved.data.id}:1`,
-        research_sources: [
-          {
-            url: blueprint.research_sources[0]!.url,
-            provenance: "user_selected_reference",
-          },
-        ],
-      });
-      const revised = (await application.call(actor, "blueprint_save", {
-        id: saved.data.id,
-        version: 1,
-        body: { ...blueprint, hook: "Different hook" },
-      })) as Envelope<Entity>;
-      expect(revised.data.version).toBe(2);
-      await expect(
-        application.call(actor, "send", {
-          id: saved.data.id,
-          approval: approval.data.approval,
-        }),
-      ).rejects.toThrow("DIRECT_OWNER_APPROVAL_REQUIRED");
-      const second = (await application.call(actor, "approve", {
-        id: saved.data.id,
-        revision: 2,
-      })) as Envelope<{ approval: string }>;
-      await application.call(actor, "send", {
-        id: saved.data.id,
-        approval: second.data.approval,
-      });
-      expect(await readdir(inbox)).toHaveLength(2);
-      expect(await store.entities(owner, "blueprint_revision")).toHaveLength(2);
-    } finally {
-      await cleanup();
-      await rm(inbox, { recursive: true });
-    }
-  });
-  it("leaves absent target queued and never claims an external project", async () => {
+describe("standalone blueprint workflow", () => {
+  it("exports the requested blueprint revision locally and rejects stale revisions", async () => {
     const { store, config, cleanup } = await testStore();
-    delete config.CONTENTOS_API_URL;
-    delete config.CONTENTOS_LOCAL_INBOX;
     try {
       const app = new Application(store, config),
-        actor = {
-          owner: config.OWNER_ID,
-          role: "owner" as const,
-          sessionHash: "s",
-        };
-      await store.putSession(
-        "s",
-        actor.owner,
-        "c",
-        new Date(Date.now() + 100000),
-      );
+        actor = { owner: config.OWNER_ID, role: "owner" as const };
       const saved = (await app.call(actor, "blueprint_save", {
         body: blueprint,
       })) as Envelope<Entity>;
-      const approval = (await app.call(actor, "approve", {
+      const exported = await app.call(actor, "blueprint_export", {
         id: saved.data.id,
         revision: 1,
-      })) as Envelope<{ approval: string }>;
-      await app.call(actor, "send", {
+      });
+      expect(exported.data).toMatchObject({
+        schema_version: "creator_intelligence.blueprint.v1",
+        blueprint_id: saved.data.id,
+        revision: 1,
+        blueprint: {
+          working_title: blueprint.working_title,
+          research_sources: blueprint.research_sources,
+        },
+      });
+      await app.call(actor, "blueprint_save", {
         id: saved.data.id,
-        approval: approval.data.approval,
+        version: 1,
+        body: { ...blueprint, hook: "New hook" },
       });
-      expect((await store.deliveries(actor.owner))[0]).toMatchObject({
-        state: "queued",
-        target: "disconnected",
-        response: null,
+      await expect(
+        app.call(actor, "blueprint_export", { id: saved.data.id, revision: 1 }),
+      ).rejects.toThrow("REVISION_CONFLICT");
+      expect(
+        await store.entities(config.OWNER_ID, "blueprint_revision"),
+      ).toHaveLength(2);
+      const updated = await app.call(
+        { ...actor, role: "agent" },
+        "blueprint_export",
+        { id: saved.data.id, revision: 2 },
+      );
+      expect(updated.data).toMatchObject({
+        revision: 2,
+        blueprint: { hook: "New hook" },
       });
+    } finally {
+      await cleanup();
+    }
+  });
+  it("has no outbound production operations, even for the owner", async () => {
+    const { store, config, cleanup } = await testStore();
+    try {
+      const app = new Application(store, config);
+      for (const operation of ["approve", "send", "drain", "deliveries"])
+        await expect(
+          app.call({ owner: config.OWNER_ID, role: "owner" }, operation, {}),
+        ).rejects.toThrow("OPERATION_NOT_FOUND");
     } finally {
       await cleanup();
     }

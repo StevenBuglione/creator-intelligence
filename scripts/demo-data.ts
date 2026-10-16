@@ -26,9 +26,6 @@ export async function demoData() {
     GOOGLE_CLIENT_ID: undefined,
     GOOGLE_CLIENT_SECRET: undefined,
     YOUTUBE_DATA_API_KEY: undefined,
-    CONTENTOS_API_URL: undefined,
-    CONTENTOS_SERVICE_TOKEN: undefined,
-    CONTENTOS_LOCAL_INBOX: process.cwd() + "/data/demo-inbox",
   };
   const store = new Store(config.DATABASE_URL);
   await store.migrate();

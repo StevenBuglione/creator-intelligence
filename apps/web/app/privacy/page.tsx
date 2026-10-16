@@ -18,7 +18,7 @@ export default function Privacy() {
         timestamp. MCP sharing is a separate, optional choice and can be
         disabled in Settings; doing so blocks subsequent agent requests. Changes
         to the policy version require renewed acceptance before collection, data
-        access or production delivery resumes.
+        access resumes.
       </p>
       <p>
         Creator Intelligence stores public YouTube records, authorized channel
@@ -29,8 +29,7 @@ export default function Privacy() {
       <p>
         Google tokens are encrypted at rest. This app requests channel-read and
         Analytics-read access. Existing production publishing tools remain
-        separate. Requests go only to official YouTube APIs and to a ContentOS
-        receiver you configure and approve.
+        separate. This application has no production delivery integration.
       </p>
       <p>
         Settings provides export, disconnect, and deletion. Disconnect removes
@@ -73,9 +72,9 @@ export default function Privacy() {
         and{" "}
         <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.
         It uses a local session cookie for authentication. When you explicitly
-        connect Claude, requested records are sent to that client; when you
-        approve production delivery, the reviewed blueprint is sent to the
-        configured ContentOS receiver.
+        enable MCP sharing, requested records are sent to the connected client.
+        Blueprint exports are downloaded locally and contain no Google
+        credentials.
       </p>
       <p>
         <a href="https://stevenbuglione.github.io/creator-intelligence/privacy.html">

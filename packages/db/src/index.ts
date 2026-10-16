@@ -37,20 +37,6 @@ export interface Session {
   csrf: string;
   expires_at: string;
 }
-export interface Delivery {
-  id: string;
-  owner_id: string;
-  blueprint_id: string;
-  revision: number;
-  payload: Record<string, Json>;
-  payload_hash: string;
-  target: string;
-  state: string;
-  attempts: number;
-  expires_at: string;
-  response: Record<string, Json> | null;
-}
-
 const migration = `
 CREATE TABLE IF NOT EXISTS users(id uuid PRIMARY KEY,password_hash text NOT NULL,created_at timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS sessions(token_hash text PRIMARY KEY,owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,csrf text NOT NULL,expires_at timestamptz NOT NULL);
@@ -386,67 +372,5 @@ export class Store {
           sql`DELETE FROM ${sql.identifier(table)} WHERE owner_id=${owner}`,
         );
     });
-  }
-  async approveAction(
-    tokenHash: string,
-    owner: string,
-    sessionHash: string,
-    blueprint: Entity,
-    payloadHash: string,
-    target: string,
-  ) {
-    await this.db.execute(
-      sql`INSERT INTO action_approvals VALUES(${tokenHash},${owner},${sessionHash},${blueprint.id},${blueprint.version},${payloadHash},${target},now()+interval '15 minutes',false)`,
-    );
-  }
-  async enqueueDelivery(
-    owner: string,
-    approvalHash: string,
-    id: string,
-    blueprint: Entity,
-    payload: Record<string, Json>,
-    hash: string,
-    target: string,
-  ): Promise<Delivery> {
-    return this.db.transaction(async (tx) => {
-      const prior = await tx.execute(
-        sql`SELECT target FROM deliveries WHERE id=${id}`,
-      );
-      if (prior.rows[0] && prior.rows[0].target !== target)
-        throw new AppError("TARGET_CHANGE_REQUIRES_NEW_REVISION", 409);
-      const approval = await tx.execute(
-        sql`UPDATE action_approvals a SET consumed=true WHERE token_hash=${approvalHash} AND a.owner_id=${owner} AND blueprint_id=${blueprint.id} AND revision=${blueprint.version} AND payload_hash=${hash} AND target=${target} AND expires_at>now() AND EXISTS(SELECT 1 FROM sessions s WHERE s.token_hash=a.session_hash AND s.expires_at>now()) RETURNING *`,
-      );
-      if (!approval.rows.length)
-        throw new AppError("DIRECT_OWNER_APPROVAL_REQUIRED", 403);
-      const current = await tx.execute(
-        sql`SELECT version FROM entities WHERE owner_id=${owner} AND kind='blueprint' AND id=${blueprint.id} FOR UPDATE`,
-      );
-      if (current.rows[0]?.version !== blueprint.version)
-        throw new AppError("REVISION_CONFLICT", 409);
-      const r = await tx.execute(
-        sql`INSERT INTO deliveries(id,owner_id,blueprint_id,revision,payload,payload_hash,target,state,expires_at) VALUES(${id},${owner},${blueprint.id},${blueprint.version},${JSON.stringify(payload)}::jsonb,${hash},${target},'queued',${String(approval.rows[0]?.expires_at)}) ON CONFLICT(id) DO UPDATE SET expires_at=CASE WHEN deliveries.state='delivered' THEN deliveries.expires_at ELSE excluded.expires_at END,payload=CASE WHEN deliveries.state='delivered' THEN deliveries.payload ELSE excluded.payload END,state=CASE WHEN deliveries.state='delivered' THEN 'delivered' ELSE 'queued' END,updated_at=now() WHERE deliveries.payload_hash=excluded.payload_hash AND deliveries.target=excluded.target RETURNING *,expires_at::text`,
-      );
-      await tx.execute(
-        sql`INSERT INTO audit_log(owner_id,operation,entity_id) VALUES(${owner},'blueprint_send_confirmed',${blueprint.id})`,
-      );
-      if (!r.rows.length) throw new AppError("IDEMPOTENCY_CONFLICT", 409);
-      return r.rows[0] as unknown as Delivery;
-    });
-  }
-  async deliveries(owner: string): Promise<Delivery[]> {
-    const r = await this.db.execute(
-      sql`SELECT *,expires_at::text FROM deliveries WHERE owner_id=${owner} ORDER BY updated_at DESC LIMIT 100`,
-    );
-    return r.rows as unknown as Delivery[];
-  }
-  async deliveryStatus(
-    id: string,
-    state: string,
-    response: Record<string, Json> | null,
-  ) {
-    await this.db.execute(
-      sql`UPDATE deliveries SET state=${state},response=${JSON.stringify(response)}::jsonb,attempts=attempts+1,updated_at=now() WHERE id=${id}`,
-    );
   }
 }

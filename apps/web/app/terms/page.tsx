@@ -22,7 +22,7 @@ export default function Terms() {
         Review the <a href="/privacy">privacy policy</a> before using features.
         Data may be incomplete or delayed. Creative suggestions and original
         drafts are independent from YouTube. Review facts, rights and the
-        production plan before authorizing delivery.
+        production plan before using or exporting it.
       </p>
       <p>
         <a href={policyLinks.terms}>Full project terms and MIT license links</a>{" "}

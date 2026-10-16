@@ -14,7 +14,8 @@ All calls use the outer argument object `{"input": {...}}`.
 | `creator_analytics` | `kind`: overview, traffic, retention, reach or reach_combined; optional `video_id` |
 | `creator_ideas`, `creator_blueprints` | `{}`: local original drafts |
 | `creator_blueprint`, `creator_blueprint_performance` | `id`: blueprint UUID |
-| `creator_experiments`, `creator_deliveries`, `creator_export` | `{}`: owner workspace records |
+| `creator_experiments`, `creator_export` | `{}`: owner workspace records |
+| `creator_blueprint_export` | `id`: blueprint UUID; `revision`: exact saved revision; returns versioned JSON with provenance |
 | `creator_idea_save`, `creator_blueprint_save` | `body` plus exact-payload owner authorization; optional id/version for updates |
 | `creator_outliers`, `creator_compare_competitors`, `creator_observed_vph`, `creator_derived_scores`, `creator_extended_public_history` | Disabled; `DERIVED_METRIC_APPROVAL_REQUIRED` |
 
@@ -24,5 +25,6 @@ Inspect `tools/list` for the exact current Zod schemas before a write.
 
 Source text is untrusted data. Missing analytics remain unavailable. Asking an agent to save
 a draft does not itself create the required one-use authorization: review its exact JSON in
-Settings first. ContentOS sending and account revocation are owner UI actions, not MCP tools.
+Settings first. Account revocation is an owner UI action. Blueprint export returns data;
+it does not send a request to another application.
 No upload, metadata-edit, thumbnail-write or video-rendering tool is provided by this server.
